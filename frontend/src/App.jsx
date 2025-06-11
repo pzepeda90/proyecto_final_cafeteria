@@ -16,6 +16,8 @@ const Register = lazy(() => import('./pages/Register'));
 const Dashboard = lazy(() => import('./pages/dashboard/Dashboard'));
 const ProductsPage = lazy(() => import('./pages/products/ProductsPage'));
 const NotFound = lazy(() => import('./pages/NotFound'));
+const Profile = lazy(() => import('./pages/Profile'));
+const Settings = lazy(() => import('./pages/Settings'));
 
 // Admin Pages
 const ManageProducts = lazy(() => import('./pages/admin/ManageProducts'));
@@ -112,6 +114,8 @@ function App() {
         <Route element={<RoleBasedRoutes allowedRoles={[ROLES.CLIENTE, ROLES.ADMIN, ROLES.VENDEDOR]} />}>
           <Route element={<MainLayout />}>
             <Route path={PRIVATE_ROUTES.CART} element={<Cart />} />
+            <Route path={PRIVATE_ROUTES.PROFILE} element={<Profile />} />
+            <Route path={PRIVATE_ROUTES.SETTINGS} element={<Settings />} />
           </Route>
         </Route>
 

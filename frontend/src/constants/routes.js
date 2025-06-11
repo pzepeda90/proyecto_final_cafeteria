@@ -14,7 +14,7 @@ export const PRIVATE_ROUTES = {
   DASHBOARD: '/dashboard',
   PROFILE: '/profile',
   PRODUCTS: '/products',
-  PRODUCT_DETAIL: (id = ':id') => `/products/${id}`,
+  SETTINGS: '/settings',
   CART: '/cart',
   
   // Rutas específicas para ADMIN
@@ -36,7 +36,7 @@ export const PRIVATE_ROUTES = {
 
   // Rutas específicas para CLIENTE
   CLIENTE: {
-    MY_ORDERS: '/client/orders',
+    MY_ORDERS: '/my-orders',
     MY_ADDRESSES: '/addresses',
     MY_REVIEWS: '/reviews',
   },

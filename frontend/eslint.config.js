@@ -8,26 +8,25 @@ export default [
   {
     files: ['**/*.{js,jsx}'],
     languageOptions: {
-      ecmaVersion: 2020,
-      globals: globals.browser,
+      globals: {
+        ...globals.browser,
+        React: true,
+      },
       parserOptions: {
         ecmaVersion: 'latest',
-        ecmaFeatures: { jsx: true },
         sourceType: 'module',
-      },
+        jsx: true
+      }
     },
     plugins: {
       'react-hooks': reactHooks,
-      'react-refresh': reactRefresh,
+      'react-refresh': reactRefresh
     },
     rules: {
       ...js.configs.recommended.rules,
       ...reactHooks.configs.recommended.rules,
-      'no-unused-vars': ['error', { varsIgnorePattern: '^[A-Z_]' }],
-      'react-refresh/only-export-components': [
-        'warn',
-        { allowConstantExport: true },
-      ],
-    },
-  },
+      'no-unused-vars': 'error',
+      'react-refresh/only-export-components': 'warn'
+    }
+  }
 ]

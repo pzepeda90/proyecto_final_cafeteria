@@ -1,3 +1,11 @@
+// Componente ProtectedRoute
+const ProtectedRoute = ({ isAllowed, redirectTo, children }) => {
+  if (!isAllowed) {
+    return <Navigate to={redirectTo} replace />;
+  }
+  return children;
+};
+
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import { PRIVATE_ROUTES, PUBLIC_ROUTES } from '../constants/routes';
@@ -7,11 +15,16 @@ import { ROLES } from '../constants/roles';
 import PublicLayout from '../layouts/PublicLayout';
 import AdminLayout from '../layouts/AdminLayout';
 import ClientLayout from '../layouts/ClientLayout';
+import MainLayout from '../layouts/MainLayout';
 
 // Páginas públicas
 import LoginPage from '../pages/auth/LoginPage';
 import RegisterPage from '../pages/auth/RegisterPage';
 import ProductsPage from '../pages/products/ProductsPage';
+
+// Páginas comunes
+import Profile from '../pages/Profile';
+import Settings from '../pages/Settings';
 
 // Páginas de cliente
 import Cart from '../pages/client/Cart';
@@ -36,6 +49,21 @@ const AppRouter = () => {
         <Route path={PUBLIC_ROUTES.LOGIN} element={<LoginPage />} />
         <Route path={PUBLIC_ROUTES.REGISTER} element={<RegisterPage />} />
         <Route path={PUBLIC_ROUTES.PRODUCTS} element={<ProductsPage />} />
+      </Route>
+
+      {/* Rutas Protegidas Comunes */}
+      <Route
+        element={
+          <ProtectedRoute
+            isAllowed={isAuthenticated}
+            redirectTo={PUBLIC_ROUTES.LOGIN}
+          >
+            <MainLayout />
+          </ProtectedRoute>
+        }
+      >
+        <Route path={PRIVATE_ROUTES.PROFILE} element={<Profile />} />
+        <Route path={PRIVATE_ROUTES.SETTINGS} element={<Settings />} />
       </Route>
 
       {/* Rutas de Cliente */}
@@ -77,13 +105,6 @@ const AppRouter = () => {
       <Route path="*" element={<Navigate to={PUBLIC_ROUTES.PRODUCTS} replace />} />
     </Routes>
   );
-};
-
-const ProtectedRoute = ({ isAllowed, redirectTo, children }) => {
-  if (!isAllowed) {
-    return <Navigate to={redirectTo} replace />;
-  }
-  return children;
 };
 
 export default AppRouter; 

@@ -127,13 +127,13 @@ const Sidebar = () => {
   const userMenuItems = menuItems[user?.role] || [];
 
   return (
-    <div className="h-full bg-white border-r border-gray-200 w-64 flex-shrink-0">
-      <div className="h-28 flex items-center justify-center border-b border-gray-200 p-4">
+    <div className="min-h-full bg-white border-r border-gray-200 w-64 flex-shrink-0 flex flex-col">
+      <div className="h-28 flex items-center justify-center border-b border-gray-200 p-4 flex-shrink-0">
         <Link to="/">
           <Logo className="transform hover:scale-105 transition-transform duration-200" />
         </Link>
       </div>
-      <nav className="mt-5 px-2">
+      <nav className="flex-1 mt-5 px-2 pb-4">
         <div className="space-y-1">
           {userMenuItems.map((item) => (
             <Link

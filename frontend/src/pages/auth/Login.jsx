@@ -4,6 +4,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
 import { PUBLIC_ROUTES } from '../../constants/routes';
+import { loginUser } from '../../redux/actions/authActions';
 
 const Login = () => {
   const dispatch = useDispatch();
@@ -29,8 +30,8 @@ const Login = () => {
     setIsLoading(true);
 
     try {
-      // TODO: Implementar la lógica de inicio de sesión
-      console.log('Login:', formData);
+      await dispatch(loginUser(formData));
+      navigate(PUBLIC_ROUTES.HOME);
     } catch (err) {
       setError(err.message || 'Error al iniciar sesión');
     } finally {

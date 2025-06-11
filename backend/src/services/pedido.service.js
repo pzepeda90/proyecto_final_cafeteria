@@ -76,8 +76,7 @@ class PedidoService {
       
       return pedido ? pedido.toJSON() : null;
     } catch (error) {
-      console.error('Error al buscar pedido por ID:', error);
-      throw error;
+      throw new Error(`Error al buscar pedido: ${error.message}`);
     }
   }
   
@@ -175,11 +174,9 @@ class PedidoService {
         throw new Error('Pedido no encontrado');
       }
       
-      // Actualizar estado del pedido
       pedido.estado_pedido_id = estadoId;
       await pedido.save({ transaction });
       
-      // Registrar cambio en historial
       await HistorialEstadoPedido.create({
         pedido_id: id,
         estado_pedido_id: estadoId,
@@ -189,12 +186,10 @@ class PedidoService {
       
       await transaction.commit();
       
-      // Retornar el pedido actualizado
       return this.findById(id);
     } catch (error) {
       await transaction.rollback();
-      console.error('Error al actualizar estado del pedido:', error);
-      throw error;
+      throw new Error(`Error al actualizar estado: ${error.message}`);
     }
   }
 }

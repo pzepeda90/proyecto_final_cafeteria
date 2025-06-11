@@ -12,9 +12,22 @@ const direccionesController = {
    */
   async getAll(req, res, next) {
     try {
-      const direcciones = await Direccion.findAll({
-        where: { usuario_id: req.usuario.id }
+      console.log('Usuario solicitando direcciones:', {
+        id: req.usuario.id,
+        email: req.usuario.email,
+        role: req.usuario.role
       });
+
+      const direcciones = await Direccion.findAll({
+        where: { usuario_id: req.usuario.id },
+        raw: true
+      });
+
+      console.log('Direcciones encontradas:', {
+        cantidad: direcciones.length,
+        direcciones: direcciones
+      });
+
       res.json(direcciones);
     } catch (error) {
       console.error('Error al obtener direcciones:', error);
@@ -49,6 +62,8 @@ const direccionesController = {
    */
   async create(req, res, next) {
     try {
+      console.log('Recibida solicitud para crear dirección:', req.body);
+
       const schema = Joi.object({
         calle: Joi.string().min(2).max(255).required(),
         numero: Joi.string().max(50),
@@ -60,9 +75,21 @@ const direccionesController = {
       });
       
       const { error } = schema.validate(req.body);
-      if (error) return next({ status: 400, message: error.details[0].message, code: 'VALIDACION' });
+      if (error) {
+        console.log('Error de validación:', error.details[0].message);
+        return next({ status: 400, message: error.details[0].message, code: 'VALIDACION' });
+      }
       
       const { calle, numero, ciudad, comuna, codigo_postal, pais, principal } = req.body;
+      
+      // Si la dirección será principal, actualizar las otras
+      if (principal) {
+        console.log('Nueva dirección será principal, actualizando otras direcciones');
+        await Direccion.update(
+          { principal: false },
+          { where: { usuario_id: req.usuario.id } }
+        );
+      }
       
       // Crear la dirección
       const direccion = await Direccion.create({
@@ -75,13 +102,16 @@ const direccionesController = {
         pais,
         principal: principal || false
       });
+
+      console.log('Dirección creada:', direccion.toJSON());
       
       // Responder exitosamente
       res.status(201).json({
         mensaje: 'Dirección añadida correctamente',
-        direccion
+        direccion: direccion.toJSON()
       });
     } catch (error) {
+      console.error('Error al crear dirección:', error);
       next(error);
     }
   },
@@ -93,6 +123,11 @@ const direccionesController = {
    */
   async update(req, res, next) {
     try {
+      console.log('Recibida solicitud para actualizar dirección:', {
+        id: req.params.id,
+        datos: req.body
+      });
+
       const schema = Joi.object({
         calle: Joi.string().min(2).max(255).required(),
         numero: Joi.string().max(50),
@@ -104,7 +139,10 @@ const direccionesController = {
       });
       
       const { error } = schema.validate(req.body);
-      if (error) return next({ status: 400, message: error.details[0].message, code: 'VALIDACION' });
+      if (error) {
+        console.log('Error de validación en actualización:', error.details[0].message);
+        return next({ status: 400, message: error.details[0].message, code: 'VALIDACION' });
+      }
       
       const { id } = req.params;
       const { calle, numero, ciudad, comuna, codigo_postal, pais, principal } = req.body;
@@ -112,7 +150,20 @@ const direccionesController = {
       // Verificar que la dirección pertenezca al usuario
       const direccion = await Direccion.findByPk(id);
       if (!direccion || direccion.usuario_id !== req.usuario.id) {
+        console.log('Dirección no encontrada o no pertenece al usuario:', {
+          direccionId: id,
+          usuarioId: req.usuario.id
+        });
         return res.status(404).json({ mensaje: 'Dirección no encontrada' });
+      }
+      
+      // Si la dirección será principal, actualizar las otras
+      if (principal) {
+        console.log('Actualizando dirección como principal, actualizando otras direcciones');
+        await Direccion.update(
+          { principal: false },
+          { where: { usuario_id: req.usuario.id } }
+        );
       }
       
       // Actualizar la dirección
@@ -132,13 +183,15 @@ const direccionesController = {
       );
       
       const direccionActualizada = await Direccion.findByPk(id);
+      console.log('Dirección actualizada:', direccionActualizada.toJSON());
       
       // Responder exitosamente
       res.json({
         mensaje: 'Dirección actualizada correctamente',
-        direccion: direccionActualizada
+        direccion: direccionActualizada.toJSON()
       });
     } catch (error) {
+      console.error('Error al actualizar dirección:', error);
       next(error);
     }
   },
@@ -180,33 +233,46 @@ const direccionesController = {
   async setPrincipal(req, res, next) {
     try {
       const { id } = req.params;
+      console.log('Recibida solicitud para establecer dirección principal:', id);
       
       // Verificar que la dirección pertenezca al usuario
       const direccion = await Direccion.findByPk(id);
       if (!direccion || direccion.usuario_id !== req.usuario.id) {
+        console.log('Dirección no encontrada o no pertenece al usuario:', {
+          direccionId: id,
+          usuarioId: req.usuario.id
+        });
         return res.status(404).json({ mensaje: 'Dirección no encontrada' });
       }
       
+      console.log('Quitando principal de todas las direcciones del usuario');
       // Primero quitar principal de todas las direcciones del usuario
       await Direccion.update(
         { principal: false },
         { where: { usuario_id: req.usuario.id } }
       );
       
+      console.log('Estableciendo nueva dirección principal');
       // Establecer como principal la seleccionada
       await Direccion.update(
         { principal: true },
         { where: { direccion_id: id } }
       );
+
+      // Obtener todas las direcciones actualizadas
+      const direccionesActualizadas = await Direccion.findAll({
+        where: { usuario_id: req.usuario.id },
+        raw: true
+      });
+
+      console.log('Direcciones actualizadas:', direccionesActualizadas);
       
-      const direccionActualizada = await Direccion.findByPk(id);
-      
-      // Responder exitosamente
       res.json({
-        mensaje: 'Dirección establecida como principal',
-        direccion: direccionActualizada
+        mensaje: 'Dirección principal actualizada correctamente',
+        direcciones: direccionesActualizadas
       });
     } catch (error) {
+      console.error('Error al establecer dirección principal:', error);
       next(error);
     }
   }

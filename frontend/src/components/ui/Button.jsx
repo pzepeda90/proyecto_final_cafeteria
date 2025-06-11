@@ -3,7 +3,7 @@ import Spinner from './Spinner';
 
 const variants = {
   primary:
-    'bg-primary text-white hover:bg-primary-dark focus:ring-primary',
+    'bg-primary-500 text-white hover:bg-primary-600 focus:ring-primary-500',
   secondary:
     'bg-gray-600 text-white hover:bg-gray-700 focus:ring-gray-500',
   success:
@@ -16,9 +16,9 @@ const variants = {
   light:
     'bg-gray-100 text-gray-800 hover:bg-gray-200 focus:ring-gray-500',
   dark: 'bg-gray-800 text-white hover:bg-gray-900 focus:ring-gray-500',
-  link: 'bg-transparent text-primary hover:underline focus:ring-primary',
+  link: 'bg-transparent text-primary-500 hover:underline focus:ring-primary-500',
   outline:
-    'bg-white border-2 border-gray-300 text-gray-700 hover:bg-gray-50 focus:ring-primary',
+    'bg-white border-2 border-gray-300 text-gray-700 hover:bg-gray-50 focus:ring-primary-500',
   ghost:
     'bg-transparent text-gray-600 hover:bg-gray-100 focus:ring-gray-500',
 };
