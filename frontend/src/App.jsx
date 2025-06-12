@@ -11,6 +11,8 @@ const AuthLayout = lazy(() => import('./layouts/AuthLayout'));
 
 // Pages
 const HomePage = lazy(() => import('./pages/home/HomePage'));
+const About = lazy(() => import('./pages/About'));
+const Contact = lazy(() => import('./pages/Contact'));
 const Login = lazy(() => import('./pages/Login'));
 const Register = lazy(() => import('./pages/Register'));
 const Dashboard = lazy(() => import('./pages/dashboard/Dashboard'));
@@ -53,6 +55,8 @@ function App() {
         {/* Rutas públicas */}
         <Route element={<MainLayout />}>
           <Route index element={<HomePage />} />
+          <Route path={PUBLIC_ROUTES.ABOUT} element={<About />} />
+          <Route path={PUBLIC_ROUTES.CONTACT} element={<Contact />} />
           <Route path={PRIVATE_ROUTES.PRODUCTS} element={<ProductsPage />} />
         </Route>
 

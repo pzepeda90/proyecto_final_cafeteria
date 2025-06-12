@@ -1,32 +1,9 @@
-import { useState, useMemo } from 'react';
-import { useSelector } from 'react-redux';
-import { selectAllOrders } from '../../store/slices/ordersSlice';
+import { useState, useMemo, useEffect } from 'react';
+import { useSelector, useDispatch } from 'react-redux';
+import { selectAllOrders, setOrdersStatus, setOrders } from '../../store/slices/ordersSlice';
 import Button from '../../components/ui/Button';
 import { formatCurrency } from '../../utils/formatters';
-
-// Mock de pedidos para demostración
-const mockOrders = [
-  {
-    id: 1,
-    date: '2024-03-15',
-    status: 'Entregado',
-    total: 125.50,
-    items: [
-      { id: 1, name: 'Espresso Clásico', quantity: 2, price: 2.50 },
-      { id: 4, name: 'Cheesecake New York', quantity: 1, price: 5.50 },
-    ]
-  },
-  {
-    id: 2,
-    date: '2024-03-14',
-    status: 'En Proceso',
-    total: 85.00,
-    items: [
-      { id: 7, name: 'Tostadas Francesas', quantity: 2, price: 8.50 },
-      { id: 11, name: 'Limonada de Fresa', quantity: 3, price: 4.50 },
-    ]
-  }
-];
+import OrdersService from '../../services/ordersService';
 
 const OrderStatusBadge = ({ status }) => {
   const getStatusColor = () => {
@@ -34,9 +11,16 @@ const OrderStatusBadge = ({ status }) => {
       case 'Entregado':
         return 'bg-green-100 text-green-800';
       case 'En Proceso':
+      case 'En Preparación':
         return 'bg-yellow-100 text-yellow-800';
       case 'Cancelado':
         return 'bg-red-100 text-red-800';
+      case 'Pendiente':
+        return 'bg-blue-100 text-blue-800';
+      case 'Confirmado':
+        return 'bg-indigo-100 text-indigo-800';
+      case 'Listo':
+        return 'bg-green-100 text-green-800';
       default:
         return 'bg-gray-100 text-gray-800';
     }
@@ -53,8 +37,34 @@ const Orders = () => {
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [statusFilter, setStatusFilter] = useState('');
   const [dateSort, setDateSort] = useState('desc'); // 'asc' | 'desc'
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   
+  const dispatch = useDispatch();
   const orders = useSelector(selectAllOrders);
+
+  // Cargar pedidos al montar el componente
+  useEffect(() => {
+    const loadOrders = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        dispatch(setOrdersStatus('loading'));
+        
+        const ordersData = await OrdersService.getOrders();
+        dispatch(setOrders(ordersData));
+        dispatch(setOrdersStatus('succeeded'));
+      } catch (err) {
+        console.error('Error al cargar pedidos:', err);
+        setError(err.message || 'Error al cargar los pedidos');
+        dispatch(setOrdersStatus('failed'));
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadOrders();
+  }, [dispatch]);
 
   const filteredAndSortedOrders = useMemo(() => {
     let result = [...orders];
@@ -77,6 +87,34 @@ const Orders = () => {
   const uniqueStatuses = useMemo(() => {
     return [...new Set(orders.map(order => order.status))];
   }, [orders]);
+
+  if (loading) {
+    return (
+      <div className="container mx-auto px-4 py-8">
+        <div className="flex justify-center items-center h-64">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="container mx-auto px-4 py-8">
+        <div className="bg-red-50 border border-red-200 rounded-lg p-6 text-center">
+          <h2 className="text-lg font-semibold text-red-800 mb-2">Error al cargar pedidos</h2>
+          <p className="text-red-600">{error}</p>
+          <Button 
+            onClick={() => window.location.reload()} 
+            className="mt-4"
+            variant="secondary"
+          >
+            Reintentar
+          </Button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -132,17 +170,26 @@ const Orders = () => {
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-gray-600">
-                    {order.items.length} {order.items.length === 1 ? 'producto' : 'productos'}
+                    {order.items?.length || 0} {(order.items?.length || 0) === 1 ? 'producto' : 'productos'}
                   </span>
                   <span className="font-semibold">{formatCurrency(order.total)}</span>
                 </div>
               </div>
             ))}
 
-            {filteredAndSortedOrders.length === 0 && (
+            {filteredAndSortedOrders.length === 0 && !loading && (
               <div className="bg-white rounded-lg shadow-md p-8 text-center text-gray-600">
-                No se encontraron pedidos
-                {statusFilter && ` con estado "${statusFilter}"`}
+                {orders.length === 0 ? (
+                  <div>
+                    <h3 className="text-lg font-semibold mb-2">No tienes pedidos aún</h3>
+                    <p>¡Haz tu primer pedido y aparecerá aquí!</p>
+                  </div>
+                ) : (
+                  <div>
+                    No se encontraron pedidos
+                    {statusFilter && ` con estado "${statusFilter}"`}
+                  </div>
+                )}
               </div>
             )}
           </div>
@@ -162,10 +209,10 @@ const Orders = () => {
                 <div>
                   <h3 className="font-medium text-gray-700 mb-2">Productos</h3>
                   <div className="space-y-4">
-                    {selectedOrder.items.map((item) => (
+                    {selectedOrder.items?.map((item) => (
                       <div key={item.id} className="flex items-center space-x-4">
                         <img
-                          src={item.image}
+                          src={item.image || 'https://via.placeholder.com/64'}
                           alt={item.name}
                           className="w-16 h-16 object-cover rounded"
                         />
@@ -183,15 +230,19 @@ const Orders = () => {
                   </div>
                 </div>
 
-                <div>
-                  <h3 className="font-medium text-gray-700 mb-2">Dirección de entrega</h3>
-                  <p className="text-gray-600">{selectedOrder.shippingAddress}</p>
-                </div>
+                {selectedOrder.shippingAddress && (
+                  <div>
+                    <h3 className="font-medium text-gray-700 mb-2">Dirección de entrega</h3>
+                    <p className="text-gray-600">{selectedOrder.shippingAddress}</p>
+                  </div>
+                )}
 
-                <div>
-                  <h3 className="font-medium text-gray-700 mb-2">Método de pago</h3>
-                  <p className="text-gray-600">{selectedOrder.paymentMethod}</p>
-                </div>
+                {selectedOrder.paymentMethod && (
+                  <div>
+                    <h3 className="font-medium text-gray-700 mb-2">Método de pago</h3>
+                    <p className="text-gray-600">{selectedOrder.paymentMethod}</p>
+                  </div>
+                )}
 
                 {selectedOrder.notes && (
                   <div>
@@ -200,19 +251,18 @@ const Orders = () => {
                   </div>
                 )}
 
-                <div className="border-t border-gray-200 pt-4 mt-4">
-                  <div className="flex justify-between items-center">
-                    <span className="font-medium">Total</span>
-                    <span className="font-semibold text-lg">
-                      {formatCurrency(selectedOrder.total)}
-                    </span>
+                <div className="border-t pt-4">
+                  <div className="flex justify-between items-center text-lg font-semibold">
+                    <span>Total:</span>
+                    <span>{formatCurrency(selectedOrder.total)}</span>
                   </div>
                 </div>
               </div>
             </div>
           ) : (
             <div className="bg-white rounded-lg shadow-md p-6 text-center text-gray-600">
-              Selecciona un pedido para ver sus detalles
+              <h3 className="text-lg font-semibold mb-2">Selecciona un pedido</h3>
+              <p>Haz clic en un pedido de la lista para ver sus detalles</p>
             </div>
           )}
         </div>

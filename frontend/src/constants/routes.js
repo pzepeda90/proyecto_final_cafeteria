@@ -6,6 +6,8 @@ export const PUBLIC_ROUTES = {
   REGISTER: '/register',
   HOME: '/',
   PRODUCTS: '/products',
+  ABOUT: '/about',
+  CONTACT: '/contact',
 };
 
 // Rutas privadas por rol

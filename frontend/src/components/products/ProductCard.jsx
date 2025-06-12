@@ -1,8 +1,33 @@
 import { Link } from 'react-router-dom';
 import { formatCurrency } from '../../utils/formatters';
 import Button from '../ui/Button';
+import Swal from 'sweetalert2';
 
 const ProductCard = ({ product, onAddToCart }) => {
+  const handleAddToCart = () => {
+    onAddToCart(product);
+    
+    // Mostrar SweetAlert de confirmación
+    const Toast = Swal.mixin({
+      toast: true,
+      position: 'top-end',
+      showConfirmButton: false,
+      timer: 3000,
+      timerProgressBar: true,
+      didOpen: (toast) => {
+        toast.addEventListener('mouseenter', Swal.stopTimer);
+        toast.addEventListener('mouseleave', Swal.resumeTimer);
+      }
+    });
+
+    Toast.fire({
+      icon: 'success',
+      title: `${product.name} agregado al carrito`,
+      background: '#10B981',
+      color: '#ffffff'
+    });
+  };
+
   return (
     <div className="bg-white rounded-lg shadow-md overflow-hidden">
       <div className="relative h-48">
@@ -32,7 +57,7 @@ const ProductCard = ({ product, onAddToCart }) => {
           </span>
           <Button
             size="sm"
-            onClick={() => onAddToCart(product)}
+            onClick={handleAddToCart}
             disabled={!product.available}
           >
             Agregar

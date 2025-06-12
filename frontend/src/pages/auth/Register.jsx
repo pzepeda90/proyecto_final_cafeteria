@@ -8,9 +8,11 @@ const Register = () => {
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
     nombre: '',
+    apellido: '',
     email: '',
     password: '',
     confirmPassword: '',
+    telefono: '',
   });
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -32,11 +34,42 @@ const Register = () => {
       return;
     }
 
+    if (formData.password.length < 8) {
+      setError('La contraseña debe tener al menos 8 caracteres');
+      return;
+    }
+
     setIsLoading(true);
 
     try {
-      // TODO: Implementar la lógica de registro
-      console.log('Register:', formData);
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/usuarios/registro`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          nombre: formData.nombre,
+          apellido: formData.apellido,
+          email: formData.email,
+          password: formData.password,
+          telefono: formData.telefono || null,
+          fecha_nacimiento: null
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.mensaje || data.message || 'Error al registrar usuario');
+      }
+
+      // Guardar token y redirigir
+      if (data.token) {
+        localStorage.setItem('token', data.token);
+      }
+
+      console.log('Registro exitoso:', data);
+      navigate(PUBLIC_ROUTES.LOGIN);
     } catch (err) {
       setError(err.message || 'Error al registrar usuario');
     } finally {
@@ -67,18 +100,30 @@ const Register = () => {
 
       <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
         <div className="space-y-4">
-          <Input
-            label="Nombre completo"
-            type="text"
-            name="nombre"
-            value={formData.nombre}
-            onChange={handleChange}
-            required
-            autoComplete="name"
-          />
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <Input
+              label="Nombre *"
+              type="text"
+              name="nombre"
+              value={formData.nombre}
+              onChange={handleChange}
+              required
+              autoComplete="given-name"
+            />
+
+            <Input
+              label="Apellido *"
+              type="text"
+              name="apellido"
+              value={formData.apellido}
+              onChange={handleChange}
+              required
+              autoComplete="family-name"
+            />
+          </div>
 
           <Input
-            label="Correo electrónico"
+            label="Correo electrónico *"
             type="email"
             name="email"
             value={formData.email}
@@ -88,23 +133,36 @@ const Register = () => {
           />
 
           <Input
-            label="Contraseña"
+            label="Teléfono"
+            type="tel"
+            name="telefono"
+            value={formData.telefono}
+            onChange={handleChange}
+            autoComplete="tel"
+            placeholder="+56912345678"
+          />
+
+          <Input
+            label="Contraseña *"
             type="password"
             name="password"
             value={formData.password}
             onChange={handleChange}
             required
             autoComplete="new-password"
+            minLength={8}
+            helperText="Mínimo 8 caracteres"
           />
 
           <Input
-            label="Confirmar contraseña"
+            label="Confirmar contraseña *"
             type="password"
             name="confirmPassword"
             value={formData.confirmPassword}
             onChange={handleChange}
             required
             autoComplete="new-password"
+            minLength={8}
           />
         </div>
 

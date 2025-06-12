@@ -75,9 +75,9 @@ const HomePage = () => {
             </div>
           </div>
         </div>
-      </section>
+              </section>
 
-      {/* Sección de Promoción */}
+        {/* Sección de Promoción */}
       <section className="py-16 bg-primary">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center">
@@ -90,8 +90,8 @@ const HomePage = () => {
             </p>
           </div>
         </div>
-      </section>
-    </div>
+              </section>
+      </div>
   );
 };
 

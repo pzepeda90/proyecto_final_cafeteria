@@ -2,47 +2,7 @@ import { createSlice } from '@reduxjs/toolkit';
 import { ORDER_STATUS } from '../../constants/orderStatus';
 
 const initialState = {
-  orders: [
-    {
-      id: 1,
-      date: '2024-03-15',
-      status: 'Entregado',
-      total: 125500,
-      items: [
-        { id: 1, name: 'Espresso Clásico', quantity: 2, price: 2500, image: 'https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?q=80&w=400' },
-        { id: 4, name: 'Cheesecake New York', quantity: 1, price: 5500, image: 'https://images.unsplash.com/photo-1524351199678-941a58a3df50?q=80&w=400' },
-      ],
-      shippingAddress: 'Calle Principal 123, Ciudad',
-      paymentMethod: 'Tarjeta de crédito',
-      notes: 'Entregar en recepción'
-    },
-    {
-      id: 2,
-      date: '2024-03-14',
-      status: 'En Proceso',
-      total: 85000,
-      items: [
-        { id: 7, name: 'Tostadas Francesas', quantity: 2, price: 8500, image: 'https://images.unsplash.com/photo-1484723091739-30a097e8f929?q=80&w=400' },
-        { id: 11, name: 'Limonada de Fresa', quantity: 3, price: 4500, image: 'https://images.unsplash.com/photo-1497534446932-c925b458314e?q=80&w=400' },
-      ],
-      shippingAddress: 'Avenida Central 456, Ciudad',
-      paymentMethod: 'Efectivo',
-      notes: 'Sin azúcar en la limonada'
-    },
-    {
-      id: 3,
-      date: '2024-03-13',
-      status: 'Cancelado',
-      total: 45000,
-      items: [
-        { id: 2, name: 'Cappuccino Italiano', quantity: 2, price: 3500, image: 'https://images.unsplash.com/photo-1517256064527-09c73fc73e38?q=80&w=400' },
-        { id: 5, name: 'Brownie con Helado', quantity: 1, price: 6000, image: 'https://images.unsplash.com/photo-1606313564200-e75d5e30476c?q=80&w=400' },
-      ],
-      shippingAddress: 'Plaza Mayor 789, Ciudad',
-      paymentMethod: 'Tarjeta de débito',
-      notes: 'Cancelado por el cliente'
-    }
-  ],
+  orders: [],
   selectedOrder: null,
   filters: {
     status: null,

@@ -6,16 +6,28 @@ import { PUBLIC_ROUTES, PRIVATE_ROUTES } from '../../constants/routes';
 import { logout } from '../../store/slices/authSlice';
 import Button from '../ui/Button';
 import Dropdown from '../ui/Dropdown';
+import { formatCurrency } from '../../utils/formatters';
 
 const Navbar = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const { user, isAuthenticated } = useSelector((state) => state.auth);
+  const { items, total, quantity } = useSelector((state) => state.cart);
   const dispatch = useDispatch();
   const navigate = useNavigate();
 
   const handleLogout = () => {
     dispatch(logout());
     navigate(PUBLIC_ROUTES.LOGIN);
+  };
+
+  // Función para generar avatar con iniciales
+  const getAvatarInitials = (nombre) => {
+    if (!nombre) return 'U';
+    const names = nombre.split(' ');
+    if (names.length >= 2) {
+      return (names[0][0] + names[1][0]).toUpperCase();
+    }
+    return nombre[0].toUpperCase();
   };
 
   const getNavLinks = () => {
@@ -36,7 +48,6 @@ const Navbar = () => {
         { id: 'my-orders', to: PRIVATE_ROUTES[ROLES.VENDEDOR].MY_ORDERS, label: 'Mis Pedidos' },
       ],
       [ROLES.CLIENTE]: [
-        { id: 'cart', to: PRIVATE_ROUTES.CART, label: 'Carrito' },
         { id: 'client-orders', to: PRIVATE_ROUTES.CLIENTE.MY_ORDERS, label: 'Mis Pedidos' },
       ],
     };
@@ -105,12 +116,37 @@ const Navbar = () => {
           <div className="hidden sm:flex items-center">
             {isAuthenticated ? (
               <div className="flex items-center space-x-4">
+                {/* Indicador del carrito para clientes */}
+                {user?.role === ROLES.CLIENTE && (
+                  <Link
+                    to={PRIVATE_ROUTES.CART}
+                    className="relative inline-flex items-center px-3 py-2 text-sm font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-50 rounded-md transition-colors"
+                  >
+                    <svg className="w-6 h-6 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
+                    </svg>
+                    <div className="flex flex-col items-start">
+                      <span className="text-xs text-gray-500">Carrito</span>
+                      <div className="flex items-center space-x-2">
+                        <span className="font-medium">{quantity} items</span>
+                        <span className="text-primary font-bold">{formatCurrency(total)}</span>
+                      </div>
+                    </div>
+                  </Link>
+                )}
+
                 <Dropdown
                   trigger={
-                    <button className="flex items-center space-x-2 text-sm text-gray-700 hover:text-gray-900">
-                      <span>{user?.nombre}</span>
-                      <span className="text-xs text-gray-500">({ROLES[user?.role]})</span>
-                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <button className="flex items-center space-x-3 text-sm text-gray-700 hover:text-gray-900 px-3 py-2 rounded-md hover:bg-gray-50 transition-colors">
+                      {/* Avatar con iniciales */}
+                      <div className="w-8 h-8 bg-primary text-white rounded-full flex items-center justify-center font-medium text-sm">
+                        {getAvatarInitials(user?.nombre)}
+                      </div>
+                      <div className="flex flex-col items-start">
+                        <span className="font-medium">{user?.nombre}</span>
+                        <span className="text-xs text-gray-500">{ROLES[user?.role]}</span>
+                      </div>
+                      <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                       </svg>
                     </button>
@@ -137,6 +173,18 @@ const Navbar = () => {
 
           {/* Menú móvil */}
           <div className="flex items-center sm:hidden">
+            {/* Carrito móvil para clientes */}
+            {isAuthenticated && user?.role === ROLES.CLIENTE && (
+              <Link
+                to={PRIVATE_ROUTES.CART}
+                className="relative inline-flex items-center p-2 mr-2 text-gray-700 hover:text-gray-900 hover:bg-gray-50 rounded-md"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
+                </svg>
+              </Link>
+            )}
+            
             <button
               type="button"
               className="inline-flex items-center justify-center p-2 rounded-md text-gray-400 hover:text-gray-500 hover:bg-gray-100"
@@ -176,13 +224,35 @@ const Navbar = () => {
                 {link.label}
               </Link>
             ))}
+            
+            {/* Carrito en móvil para clientes */}
+            {isAuthenticated && user?.role === ROLES.CLIENTE && (
+              <Link
+                to={PRIVATE_ROUTES.CART}
+                className="flex items-center px-3 py-2 text-base font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-50"
+                onClick={() => setIsMenuOpen(false)}
+              >
+                <svg className="w-6 h-6 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
+                </svg>
+                <div className="flex flex-col">
+                  <span>Carrito ({quantity} items)</span>
+                  <span className="text-sm text-primary font-bold">{formatCurrency(total)}</span>
+                </div>
+              </Link>
+            )}
           </div>
           <div className="pt-4 pb-3 border-t border-gray-200">
             {isAuthenticated ? (
               <div className="space-y-1">
-                <div className="px-3 py-2">
-                  <p className="text-base font-medium text-gray-800">{user?.nombre}</p>
-                  <p className="text-sm text-gray-500">{ROLES[user?.role]}</p>
+                <div className="flex items-center px-3 py-2">
+                  <div className="w-10 h-10 bg-primary text-white rounded-full flex items-center justify-center font-medium">
+                    {getAvatarInitials(user?.nombre)}
+                  </div>
+                  <div className="ml-3">
+                    <p className="text-base font-medium text-gray-800">{user?.nombre}</p>
+                    <p className="text-sm text-gray-500">{ROLES[user?.role]}</p>
+                  </div>
                 </div>
                 {userMenuItems.map((item) => !item.divider && (
                   <button

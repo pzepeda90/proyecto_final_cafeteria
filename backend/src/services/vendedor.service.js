@@ -69,7 +69,6 @@ class VendedorService {
       
       console.log('VendedorService.create - Contraseña encriptada, creando en BD...');
       console.log('VendedorService.create - Datos a insertar:', {
-        usuario_id: 1, // Usar ID por defecto
         nombre,
         apellido,
         email,
@@ -79,7 +78,6 @@ class VendedorService {
       });
       
       const vendedor = await Vendedor.create({
-        usuario_id: 1, // Agregar usuario_id por defecto (admin que crea el vendedor)
         nombre,
         apellido,
         email,

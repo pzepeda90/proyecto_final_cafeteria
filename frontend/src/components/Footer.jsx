@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom';
+import { PUBLIC_ROUTES, PRIVATE_ROUTES } from '../constants/routes';
 
 const Footer = () => {
   return (
@@ -18,17 +19,17 @@ const Footer = () => {
             <h3 className="text-xl font-bold mb-4">Enlaces Rápidos</h3>
             <ul className="space-y-2">
               <li>
-                <Link to="/menu" className="text-gray-300 hover:text-white">
-                  Menú
+                <Link to={PRIVATE_ROUTES.PRODUCTS} className="text-gray-300 hover:text-white">
+                  Productos
                 </Link>
               </li>
               <li>
-                <Link to="/about" className="text-gray-300 hover:text-white">
+                <Link to={PUBLIC_ROUTES.ABOUT} className="text-gray-300 hover:text-white">
                   Nosotros
                 </Link>
               </li>
               <li>
-                <Link to="/contact" className="text-gray-300 hover:text-white">
+                <Link to={PUBLIC_ROUTES.CONTACT} className="text-gray-300 hover:text-white">
                   Contacto
                 </Link>
               </li>

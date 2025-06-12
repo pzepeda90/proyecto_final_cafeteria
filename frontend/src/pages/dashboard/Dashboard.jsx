@@ -1,195 +1,337 @@
 import { useSelector } from 'react-redux';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { ROLE_LABELS } from '../../constants/roles';
 import {
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend, LineChart, Line, Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend, LineChart, Line
 } from 'recharts';
 import Modal from '../../components/ui/Modal';
-
-// Datos mock para KPIs
-const kpis = [
-  { label: 'Ventas Diarias', value: 45000, icon: '💰', tooltip: 'Ingreso total generado hoy' },
-  { label: 'Ventas Mensuales', value: 1250000, icon: '📈', tooltip: 'Ingreso total generado este mes' },
-  { label: 'Ticket Promedio', value: 8500, icon: '🧾', tooltip: 'Monto promedio gastado por cliente' },
-  { label: 'Clientes Atendidos (Hoy)', value: 38, icon: '👤', tooltip: 'Clientes únicos atendidos hoy' },
-  { label: 'Clientes Atendidos (Mes)', value: 120, icon: '👥', tooltip: 'Clientes únicos atendidos este mes' },
-  { label: 'CMV', value: 600000, icon: '📦', tooltip: 'Costo de mercancía vendida este mes' },
-  { label: 'Margen Bruto', value: 52, icon: '📊', tooltip: '[(Ventas - CMV) / Ventas] x 100' },
-  { label: 'Gastos Operativos', value: 350000, icon: '💡', tooltip: 'Gastos fijos y variables del mes' },
-  { label: 'Rotación de Inventario', value: 3.2, icon: '🔄', tooltip: 'Veces que se renueva el inventario al mes' },
-  { label: 'Satisfacción Cliente', value: 4.6, icon: '⭐', tooltip: 'Promedio de encuestas (1-5)' },
-  { label: 'Merma/Desperdicio', value: 2.5, icon: '🗑️', tooltip: 'Porcentaje de productos desechados' },
-  { label: 'Productividad Personal', value: 12, icon: '🧑‍🍳', tooltip: 'Clientes atendidos por empleado (hoy)' },
-];
-
-// Datos mock para gráficos
-const ventasDiarias = Array.from({ length: 30 }, (_, i) => ({
-  dia: `Día ${i + 1}`,
-  ventas: Math.floor(30000 + Math.random() * 30000),
-}));
-
-const ventasMensuales = [
-  { mes: 'Ene', ventas: 90000 },
-  { mes: 'Feb', ventas: 110000 },
-  { mes: 'Mar', ventas: 95000 },
-  { mes: 'Abr', ventas: 120000 },
-  { mes: 'May', ventas: 130000 },
-  { mes: 'Jun', ventas: 125000 },
-  { mes: 'Jul', ventas: 140000 },
-  { mes: 'Ago', ventas: 135000 },
-  { mes: 'Sep', ventas: 120000 },
-  { mes: 'Oct', ventas: 150000 },
-  { mes: 'Nov', ventas: 160000 },
-  { mes: 'Dic', ventas: 170000 },
-];
-
-const productosVendidos = [
-  { name: 'Espresso', value: 80 },
-  { name: 'Cappuccino', value: 60 },
-  { name: 'Latte', value: 50 },
-  { name: 'Brownie', value: 40 },
-  { name: 'Tiramisú', value: 30 },
-  { name: 'Limonada', value: 60 },
-];
-
-const satisfaccion = [
-  { name: '1 estrella', value: 2 },
-  { name: '2 estrellas', value: 3 },
-  { name: '3 estrellas', value: 8 },
-  { name: '4 estrellas', value: 20 },
-  { name: '5 estrellas', value: 67 },
-];
-
-const merma = [
-  { name: 'Desperdicio', value: 2.5 },
-  { name: 'Utilizado', value: 97.5 },
-];
-
-const productividad = [
-  { empleado: 'Ana', clientes: 15, ventas: 120000 },
-  { empleado: 'Luis', clientes: 12, ventas: 95000 },
-  { empleado: 'Pedro', clientes: 11, ventas: 90000 },
-  { empleado: 'Sofía', clientes: 14, ventas: 110000 },
-];
-
-const rotacionInventario = [
-  { mes: 'Ene', rotacion: 2.8 },
-  { mes: 'Feb', rotacion: 3.1 },
-  { mes: 'Mar', rotacion: 3.0 },
-  { mes: 'Abr', rotacion: 3.3 },
-  { mes: 'May', rotacion: 3.2 },
-  { mes: 'Jun', rotacion: 3.4 },
-];
-
-const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#A259F7', '#FF5C8A'];
-
-// Estilos para leyendas y labels
-const legendStyle = {
-  fontSize: '12px',
-  maxWidth: 180,
-  whiteSpace: 'normal',
-  wordBreak: 'break-word',
-};
-const labelStyle = {
-  fontSize: '11px',
-  fontWeight: 500,
-};
-
-const secondaryCharts = [
-  {
-    key: 'satisfaccion',
-    title: 'Satisfacción del Cliente',
-    content: (
-      <div style={{ padding: 8 }}>
-        <PieChart width={220} height={180}>
-          <Pie data={satisfaccion} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={60} label={({ name, value }) => `${value}`} labelLine={false} style={labelStyle}>
-            {satisfaccion.map((entry, index) => (
-              <Cell key={`cell-sat-${index}`} fill={COLORS[index % COLORS.length]} />
-            ))}
-          </Pie>
-          <Tooltip />
-        </PieChart>
-        <div className="flex flex-wrap justify-center mt-2" style={legendStyle}>
-          {satisfaccion.map((entry, index) => (
-            <div key={entry.name} className="flex items-center mr-2 mb-1">
-              <span style={{ width: 10, height: 10, background: COLORS[index % COLORS.length], display: 'inline-block', marginRight: 4, borderRadius: 2 }}></span>
-              <span className="truncate" title={entry.name}>{entry.name}</span>
-            </div>
-          ))}
-        </div>
-      </div>
-    ),
-  },
-  {
-    key: 'merma',
-    title: 'Porcentaje de Merma/Desperdicio',
-    content: (
-      <div style={{ padding: 8 }}>
-        <PieChart width={220} height={180}>
-          <Pie data={merma} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={60} label={({ value }) => `${value}`} labelLine={false} style={labelStyle}>
-            {merma.map((entry, index) => (
-              <Cell key={`cell-merma-${index}`} fill={COLORS[index % COLORS.length]} />
-            ))}
-          </Pie>
-          <Tooltip />
-        </PieChart>
-        <div className="flex flex-wrap justify-center mt-2" style={legendStyle}>
-          {merma.map((entry, index) => (
-            <div key={entry.name} className="flex items-center mr-2 mb-1">
-              <span style={{ width: 10, height: 10, background: COLORS[index % COLORS.length], display: 'inline-block', marginRight: 4, borderRadius: 2 }}></span>
-              <span className="truncate" title={entry.name}>{entry.name}</span>
-            </div>
-          ))}
-        </div>
-      </div>
-    ),
-  },
-  {
-    key: 'productividad',
-    title: 'Productividad del Personal',
-    content: (
-      <div style={{ padding: 8 }}>
-        <BarChart width={220} height={180} data={productividad} margin={{ top: 10, right: 10, left: 0, bottom: 5 }}>
-          <CartesianGrid strokeDasharray="3 3" />
-          <XAxis dataKey="empleado" tick={{ fontSize: 11 }} />
-          <YAxis tick={{ fontSize: 11 }} />
-          <Tooltip />
-          <Legend wrapperStyle={legendStyle} iconSize={10} />
-          <Bar dataKey="clientes" fill="#0088FE" name="Clientes Atendidos" />
-          <Bar dataKey="ventas" fill="#FFBB28" name="Ventas ($)" />
-        </BarChart>
-      </div>
-    ),
-  },
-  {
-    key: 'rotacion',
-    title: 'Rotación de Inventario',
-    content: (
-      <div style={{ padding: 8 }}>
-        <LineChart width={440} height={180} data={rotacionInventario} margin={{ top: 10, right: 10, left: 0, bottom: 5 }}>
-          <CartesianGrid strokeDasharray="3 3" />
-          <XAxis dataKey="mes" tick={{ fontSize: 11 }} />
-          <YAxis tick={{ fontSize: 11 }} />
-          <Tooltip />
-          <Legend wrapperStyle={legendStyle} iconSize={10} />
-          <Line type="monotone" dataKey="rotacion" stroke="#00C49F" name="Rotación" />
-        </LineChart>
-      </div>
-    ),
-  },
-];
+import DashboardService from '../../services/dashboardService';
 
 const Dashboard = () => {
   const { user } = useSelector((state) => state.auth);
   const [modalChart, setModalChart] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  
+  // Estados para datos reales
+  const [stats, setStats] = useState({});
+  const [ventasDiarias, setVentasDiarias] = useState([]);
+  const [ventasMensuales, setVentasMensuales] = useState([]);
+  const [productosVendidos, setProductosVendidos] = useState([]);
+  const [productividad, setProductividad] = useState([]);
+  const [rotacionInventario, setRotacionInventario] = useState([]);
+
+  // Datos mock para satisfacción y merma (hasta implementar encuestas)
+  const satisfaccion = [
+    { name: '1 estrella', value: 2 },
+    { name: '2 estrellas', value: 3 },
+    { name: '3 estrellas', value: 8 },
+    { name: '4 estrellas', value: 20 },
+    { name: '5 estrellas', value: 67 },
+  ];
+
+  const merma = [
+    { name: 'Desperdicio', value: stats.merma || 2.5 },
+    { name: 'Utilizado', value: 100 - (stats.merma || 2.5) },
+  ];
+
+  useEffect(() => {
+    loadDashboardData();
+  }, []);
+
+  const loadDashboardData = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      // Cargar todos los datos en paralelo
+      const [
+        statsData,
+        ventasDiariasData,
+        ventasMensualesData,
+        productosVendidosData,
+        productividadData,
+        rotacionData
+      ] = await Promise.all([
+        DashboardService.getStats(),
+        DashboardService.getVentasDiarias(),
+        DashboardService.getVentasMensuales(),
+        DashboardService.getProductosMasVendidos(),
+        DashboardService.getProductividadPersonal(),
+        DashboardService.getRotacionInventario()
+      ]);
+
+      setStats(statsData);
+      setVentasDiarias(ventasDiariasData);
+      setVentasMensuales(ventasMensualesData);
+      setProductosVendidos(productosVendidosData);
+      setProductividad(productividadData);
+      setRotacionInventario(rotacionData);
+
+    } catch (error) {
+      console.error('Error al cargar datos del dashboard:', error);
+      setError('Error al cargar los datos del dashboard');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // KPIs dinámicos basados en datos reales
+  const kpis = [
+    { 
+      label: 'Ventas Diarias', 
+      value: stats.ventasHoy || 0, 
+      icon: '💰', 
+      tooltip: 'Ingreso total generado hoy',
+      format: 'currency'
+    },
+    { 
+      label: 'Ventas Mensuales', 
+      value: stats.ventasMes || 0, 
+      icon: '📈', 
+      tooltip: 'Ingreso total generado este mes',
+      format: 'currency'
+    },
+    { 
+      label: 'Ticket Promedio', 
+      value: stats.ticketPromedio || 0, 
+      icon: '🧾', 
+      tooltip: 'Monto promedio gastado por cliente',
+      format: 'currency'
+    },
+    { 
+      label: 'Clientes Atendidos (Hoy)', 
+      value: stats.clientesHoy || 0, 
+      icon: '👤', 
+      tooltip: 'Clientes únicos atendidos hoy' 
+    },
+    { 
+      label: 'Clientes Atendidos (Mes)', 
+      value: stats.clientesMes || 0, 
+      icon: '👥', 
+      tooltip: 'Clientes únicos atendidos este mes' 
+    },
+    { 
+      label: 'CMV', 
+      value: stats.cmv || 0, 
+      icon: '📦', 
+      tooltip: 'Costo de mercancía vendida este mes',
+      format: 'currency'
+    },
+    { 
+      label: 'Margen Bruto', 
+      value: stats.margenBruto || 0, 
+      icon: '📊', 
+      tooltip: '[(Ventas - CMV) / Ventas] x 100',
+      format: 'percentage'
+    },
+    { 
+      label: 'Gastos Operativos', 
+      value: stats.gastosOperativos || 0, 
+      icon: '💡', 
+      tooltip: 'Gastos fijos y variables del mes',
+      format: 'currency'
+    },
+    { 
+      label: 'Rotación de Inventario', 
+      value: stats.rotacionInventario || 0, 
+      icon: '🔄', 
+      tooltip: 'Veces que se renueva el inventario al mes',
+      format: 'decimal'
+    },
+    { 
+      label: 'Satisfacción Cliente', 
+      value: stats.satisfaccionCliente || 4.6, 
+      icon: '⭐', 
+      tooltip: 'Promedio de encuestas (1-5)',
+      format: 'decimal'
+    },
+    { 
+      label: 'Merma/Desperdicio', 
+      value: stats.merma || 2.5, 
+      icon: '🗑️', 
+      tooltip: 'Porcentaje de productos desechados',
+      format: 'percentage'
+    },
+    { 
+      label: 'Productividad Personal', 
+      value: stats.productividadPersonal || 0, 
+      icon: '🧑‍🍳', 
+      tooltip: 'Clientes atendidos por empleado (hoy)',
+      format: 'decimal'
+    },
+  ];
+
+  const formatValue = (value, format) => {
+    if (typeof value !== 'number') return value;
+    
+    switch (format) {
+      case 'currency':
+        return `$${value.toLocaleString('es-CL')}`;
+      case 'percentage':
+        return `${value.toFixed(1)}%`;
+      case 'decimal':
+        return value.toFixed(1);
+      default:
+        return value.toLocaleString('es-CL');
+    }
+  };
+
+  const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#A259F7', '#FF5C8A'];
+
+  // Estilos para leyendas y labels
+  const legendStyle = {
+    fontSize: '12px',
+    maxWidth: 180,
+    whiteSpace: 'normal',
+    wordBreak: 'break-word',
+  };
+  const labelStyle = {
+    fontSize: '11px',
+    fontWeight: 500,
+  };
+
+  const secondaryCharts = [
+    {
+      key: 'satisfaccion',
+      title: 'Satisfacción del Cliente',
+      content: (
+        <div style={{ padding: 8 }}>
+          <PieChart width={220} height={180}>
+            <Pie data={satisfaccion} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={60} label={({ name, value }) => `${value}`} labelLine={false} style={labelStyle}>
+              {satisfaccion.map((entry, index) => (
+                <Cell key={`cell-sat-${index}`} fill={COLORS[index % COLORS.length]} />
+              ))}
+            </Pie>
+            <Tooltip />
+          </PieChart>
+          <div className="flex flex-wrap justify-center mt-2" style={legendStyle}>
+            {satisfaccion.map((entry, index) => (
+              <div key={entry.name} className="flex items-center mr-2 mb-1">
+                <span style={{ width: 10, height: 10, background: COLORS[index % COLORS.length], display: 'inline-block', marginRight: 4, borderRadius: 2 }}></span>
+                <span className="truncate" title={entry.name}>{entry.name}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      ),
+    },
+    {
+      key: 'merma',
+      title: 'Porcentaje de Merma/Desperdicio',
+      content: (
+        <div style={{ padding: 8 }}>
+          <PieChart width={220} height={180}>
+            <Pie data={merma} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={60} label={({ value }) => `${value.toFixed(1)}%`} labelLine={false} style={labelStyle}>
+              {merma.map((entry, index) => (
+                <Cell key={`cell-merma-${index}`} fill={COLORS[index % COLORS.length]} />
+              ))}
+            </Pie>
+            <Tooltip formatter={(value) => `${value.toFixed(1)}%`} />
+          </PieChart>
+          <div className="flex flex-wrap justify-center mt-2" style={legendStyle}>
+            {merma.map((entry, index) => (
+              <div key={entry.name} className="flex items-center mr-2 mb-1">
+                <span style={{ width: 10, height: 10, background: COLORS[index % COLORS.length], display: 'inline-block', marginRight: 4, borderRadius: 2 }}></span>
+                <span className="truncate" title={entry.name}>{entry.name}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      ),
+    },
+    {
+      key: 'productividad',
+      title: 'Productividad del Personal',
+      content: (
+        <div style={{ padding: 8 }}>
+          <BarChart width={220} height={180} data={productividad} margin={{ top: 10, right: 10, left: 0, bottom: 5 }}>
+            <CartesianGrid strokeDasharray="3 3" />
+            <XAxis dataKey="empleado" tick={{ fontSize: 11 }} />
+            <YAxis tick={{ fontSize: 11 }} />
+            <Tooltip formatter={(value, name) => [
+              name === 'ventas' ? `$${value.toLocaleString('es-CL')}` : value,
+              name === 'clientes' ? 'Clientes Atendidos' : 'Ventas'
+            ]} />
+            <Legend wrapperStyle={legendStyle} iconSize={10} />
+            <Bar dataKey="clientes" fill="#0088FE" name="Clientes" />
+            <Bar dataKey="ventas" fill="#FFBB28" name="Ventas" />
+          </BarChart>
+        </div>
+      ),
+    },
+    {
+      key: 'rotacion',
+      title: 'Rotación de Inventario',
+      content: (
+        <div style={{ padding: 8 }}>
+          <LineChart width={440} height={180} data={rotacionInventario} margin={{ top: 10, right: 10, left: 0, bottom: 5 }}>
+            <CartesianGrid strokeDasharray="3 3" />
+            <XAxis dataKey="mes" tick={{ fontSize: 11 }} />
+            <YAxis tick={{ fontSize: 11 }} />
+            <Tooltip formatter={(value) => [value.toFixed(2), 'Rotación']} />
+            <Legend wrapperStyle={legendStyle} iconSize={10} />
+            <Line type="monotone" dataKey="rotacion" stroke="#00C49F" name="Rotación" />
+          </LineChart>
+        </div>
+      ),
+    },
+  ];
+
+  if (loading) {
+    return (
+      <div className="container mx-auto px-4 py-8">
+        <div className="flex justify-center items-center h-64">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+            <p className="text-gray-600">Cargando datos del dashboard...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="container mx-auto px-4 py-8">
+        <div className="bg-red-50 border border-red-200 rounded-lg p-6 text-center">
+          <div className="text-red-600 mb-4">
+            <svg className="w-12 h-12 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.5 0L4.268 18.5c-.77.833.192 2.5 1.732 2.5z" />
+            </svg>
+          </div>
+          <h3 className="text-lg font-semibold text-red-800 mb-2">Error al cargar el dashboard</h3>
+          <p className="text-red-600 mb-4">{error}</p>
+          <button
+            onClick={loadDashboardData}
+            className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors"
+          >
+            Reintentar
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="container mx-auto px-4 py-8">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold mb-2">Bienvenido, {user?.name}</h1>
-        <p className="text-gray-600 mb-4">
-          Tu rol es: <span className="font-semibold">{ROLE_LABELS[user?.role]}</span>
-        </p>
+      <div className="mb-8 flex justify-between items-center">
+        <div>
+          <h1 className="text-3xl font-bold mb-2">Bienvenido, {user?.name}</h1>
+          <p className="text-gray-600 mb-4">
+            Tu rol es: <span className="font-semibold">{ROLE_LABELS[user?.role]}</span>
+          </p>
+        </div>
+        <button
+          onClick={loadDashboardData}
+          className="bg-primary text-white px-4 py-2 rounded-lg hover:bg-primary-dark transition-colors flex items-center gap-2"
+          disabled={loading}
+        >
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+          </svg>
+          Actualizar
+        </button>
       </div>
 
       {/* KPIs */}
@@ -197,7 +339,9 @@ const Dashboard = () => {
         {kpis.map((kpi) => (
           <div key={kpi.label} className="bg-white rounded-lg shadow p-6 flex flex-col items-center relative group">
             <span className="text-4xl mb-2">{kpi.icon}</span>
-            <span className="text-2xl font-bold">{typeof kpi.value === 'number' ? kpi.value.toLocaleString('es-CL') : kpi.value}</span>
+            <span className="text-2xl font-bold">
+              {formatValue(kpi.value, kpi.format)}
+            </span>
             <span className="text-gray-500 mt-1 text-sm text-center">{kpi.label}</span>
             <span className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity bg-gray-800 text-white text-xs rounded px-2 py-1 z-10">
               {kpi.tooltip}
@@ -221,6 +365,7 @@ const Dashboard = () => {
             </LineChart>
           </ResponsiveContainer>
         </div>
+        
         {/* Gráfico de barras: Ventas mensuales */}
         <div className="bg-white rounded-lg shadow p-6">
           <h2 className="text-xl font-semibold mb-4 text-center">Ventas Mensuales (Año Actual)</h2>
@@ -270,7 +415,8 @@ const Dashboard = () => {
             ))}
           </div>
         </div>
-        {/* Gráficos secundarios mock */}
+        
+        {/* Gráficos secundarios */}
         {secondaryCharts.map((chart) => (
           <div
             key={chart.key}
@@ -279,19 +425,7 @@ const Dashboard = () => {
           >
             <h2 className="text-lg font-semibold mb-4 text-center">{chart.title}</h2>
             <div className="flex justify-center items-center">
-              {/* Para la card de rotación, usa un gráfico más ancho */}
-              {chart.key === 'rotacion' ? (
-                <div style={{ padding: 8 }}>
-                  <LineChart width={440} height={180} data={rotacionInventario} margin={{ top: 10, right: 10, left: 0, bottom: 5 }}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="mes" tick={{ fontSize: 11 }} />
-                    <YAxis tick={{ fontSize: 11 }} />
-                    <Tooltip />
-                    <Legend wrapperStyle={legendStyle} iconSize={10} />
-                    <Line type="monotone" dataKey="rotacion" stroke="#00C49F" name="Rotación" />
-                  </LineChart>
-                </div>
-              ) : chart.content}
+              {chart.content}
             </div>
             <div className="text-primary text-xs text-center mt-2">Haz clic para ampliar</div>
           </div>
@@ -323,7 +457,9 @@ const Dashboard = () => {
             </PieChart>
           )}
           {secondaryCharts.find((c) => c.key === modalChart)?.content && (
-            <div className="mt-4">{secondaryCharts.find((c) => c.key === modalChart)?.content}</div>
+            <div className="mt-4 scale-150 transform origin-center">
+              {secondaryCharts.find((c) => c.key === modalChart)?.content}
+            </div>
           )}
         </div>
       </Modal>
