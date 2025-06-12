@@ -1,0 +1,79 @@
+version: '3.8'
+
+services:
+  # Base de datos PostgreSQL
+  postgres:
+    image: postgres:15-alpine
+    container_name: cafeteria_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: cafeteria_l_bandito
+      POSTGRES_USER: cafeteria_user
+      POSTGRES_PASSWORD: ${DB_PASS:-cafeteria_password_change_me}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./backend/database_setup.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - cafeteria_network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U cafeteria_user -d cafeteria_l_bandito"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Backend API
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+      target: production
+    container_name: cafeteria_backend
+    restart: unless-stopped
+    environment:
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: cafeteria_l_bandito
+      DB_USER: cafeteria_user
+      DB_PASS: ${DB_PASS:-cafeteria_password_change_me}
+      PORT: 3000
+      NODE_ENV: production
+      JWT_SECRET: ${JWT_SECRET:-CHANGE_THIS_JWT_SECRET_IN_PRODUCTION}
+      CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:80}
+    ports:
+      - "3000:3000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - cafeteria_network
+    volumes:
+      - backend_logs:/app/logs
+
+  # Frontend React con Nginx
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      target: production
+      args:
+        VITE_API_BASE_URL: ${VITE_API_BASE_URL:-http://localhost:3000/api}
+    container_name: cafeteria_frontend
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    networks:
+      - cafeteria_network
+
+volumes:
+  postgres_data:
+    driver: local
+  backend_logs:
+    driver: local
+
+networks:
+  cafeteria_network:
+    driver: bridge 

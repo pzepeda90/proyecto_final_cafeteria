@@ -194,6 +194,64 @@ router.get('/:id/historial', verificarToken, pedidosController.obtenerHistorialE
 
 /**
  * @swagger
+ * /api/pedidos/directo:
+ *   post:
+ *     summary: Crear pedido directo (POS)
+ *     tags:
+ *       - Pedidos
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               metodo_pago_id:
+ *                 type: integer
+ *               direccion_id:
+ *                 type: integer
+ *               tipo_entrega:
+ *                 type: string
+ *                 enum: [local, domicilio]
+ *               notas:
+ *                 type: string
+ *               productos:
+ *                 type: array
+ *                 items:
+ *                   type: object
+ *                   properties:
+ *                     producto_id:
+ *                       type: integer
+ *                     cantidad:
+ *                       type: integer
+ *                     precio_unitario:
+ *                       type: number
+ *             required:
+ *               - metodo_pago_id
+ *               - productos
+ *     responses:
+ *       201:
+ *         description: Pedido directo creado correctamente
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 mensaje:
+ *                   type: string
+ *                 pedido:
+ *                   $ref: '#/components/schemas/Pedido'
+ *       401:
+ *         description: No autenticado o token inválido
+ *       400:
+ *         description: Error en la validación
+ */
+router.post('/directo', verificarToken, pedidosController.crearPedidoDirecto);
+
+/**
+ * @swagger
  * /api/pedidos:
  *   post:
  *     summary: Crear nuevo pedido

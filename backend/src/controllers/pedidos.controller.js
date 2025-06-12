@@ -63,7 +63,7 @@ const crearPedido = async (req, res, next) => {
   try {
     const schema = Joi.object({
       metodo_pago_id: Joi.number().integer().required(),
-      direccion_id: Joi.number().integer().optional()
+      direccion_id: Joi.number().integer().allow(null).optional()
     });
     const { error } = schema.validate(req.body);
     if (error) return next({ status: 400, message: error.details[0].message, code: 'VALIDACION' });
@@ -119,6 +119,60 @@ const crearPedido = async (req, res, next) => {
     
     res.status(201).json({
       mensaje: 'Pedido creado correctamente',
+      pedido
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// Crear pedido directo (para POS)
+const crearPedidoDirecto = async (req, res, next) => {
+  try {
+    const schema = Joi.object({
+      metodo_pago_id: Joi.number().integer().required(),
+      direccion_id: Joi.number().integer().allow(null).optional(),
+      tipo_entrega: Joi.string().valid('local', 'domicilio', 'takeaway').default('local'),
+      notas: Joi.string().allow('', null).optional(),
+      productos: Joi.array().items(
+        Joi.object({
+          producto_id: Joi.number().integer().required(),
+          cantidad: Joi.number().integer().min(1).required(),
+          precio_unitario: Joi.number().positive().required()
+        })
+      ).min(1).required()
+    });
+    
+    const { error } = schema.validate(req.body);
+    if (error) return next({ status: 400, message: error.details[0].message, code: 'VALIDACION' });
+    
+    const { metodo_pago_id, direccion_id, tipo_entrega, notas, productos } = req.body;
+    
+    // Validar que los productos existan y tengan stock suficiente
+    for (const producto of productos) {
+      const productoExistente = await require('../services/producto.service').findById(producto.producto_id);
+      if (!productoExistente) {
+        return res.status(400).json({ mensaje: `Producto con ID ${producto.producto_id} no encontrado` });
+      }
+      if (productoExistente.stock < producto.cantidad) {
+        return res.status(400).json({ 
+          mensaje: `Stock insuficiente para ${productoExistente.nombre}. Stock disponible: ${productoExistente.stock}` 
+        });
+      }
+    }
+    
+    // Crear el pedido directo
+    const pedido = await PedidoService.createDirect({
+      usuario_id: req.usuario.id,
+      metodo_pago_id,
+      direccion_id,
+      tipo_entrega,
+      notas,
+      productos
+    });
+    
+    res.status(201).json({
+      mensaje: 'Pedido directo creado correctamente',
       pedido
     });
   } catch (error) {
@@ -199,6 +253,7 @@ module.exports = {
   obtenerPedidos,
   obtenerPedidoPorId,
   crearPedido,
+  crearPedidoDirecto,
   actualizarEstadoPedido,
   obtenerHistorialEstados
 }; 

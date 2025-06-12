@@ -9,6 +9,7 @@ const AddressManager = ({ addresses = [], onAddressesChange, isEditing, showAllA
     comuna: '',
     ciudad: '',
     codigo_postal: '',
+    pais: 'Chile',
     principal: false,
   });
 
@@ -31,8 +32,8 @@ const AddressManager = ({ addresses = [], onAddressesChange, isEditing, showAllA
   }, [addresses, onShowAllAddressesChange]);
 
   const handleAddAddress = async () => {
-    if (!newAddress.calle || !newAddress.numero || !newAddress.comuna) {
-      showError('Por favor completa los campos obligatorios');
+    if (!newAddress.calle || !newAddress.numero || !newAddress.comuna || !newAddress.ciudad) {
+      showError('Por favor completa los campos obligatorios: Calle, Número, Comuna y Ciudad');
       return;
     }
 
@@ -62,10 +63,10 @@ const AddressManager = ({ addresses = [], onAddressesChange, isEditing, showAllA
       const requestData = {
         calle: newAddress.calle,
         numero: newAddress.numero,
-        ciudad: newAddress.ciudad,
+        ciudad: newAddress.ciudad || 'Santiago',
         comuna: newAddress.comuna,
-        codigo_postal: newAddress.codigo_postal,
-        pais: 'Chile',
+        codigo_postal: newAddress.codigo_postal || '0000000',
+        pais: newAddress.pais || 'Chile',
         principal: newAddress.principal
       };
 
@@ -81,34 +82,18 @@ const AddressManager = ({ addresses = [], onAddressesChange, isEditing, showAllA
       });
 
       if (!response.ok) {
-        const error = await response.text();
-        throw new Error(error || 'Error al agregar dirección');
+        const errorData = await response.json().catch(() => ({ mensaje: 'Error desconocido' }));
+        throw new Error(errorData.mensaje || errorData.message || 'Error al agregar dirección');
       }
 
       const data = await response.json();
       console.log('Datos recibidos del servidor:', data);
+      console.log('Dirección recibida:', data.direccion);
+      console.log('Direcciones actuales antes de agregar:', addresses);
       
-      // Crear la nueva dirección con los datos del servidor
-      const newAddressData = {
-        ...data.direccion,
-        principal: newAddress.principal
-      };
-
-      // Si la nueva dirección es principal, actualizamos todas las direcciones existentes
-      let updatedAddresses;
-      if (newAddress.principal) {
-        console.log('Nueva dirección será principal - actualizando direcciones existentes');
-        updatedAddresses = addresses.map(addr => ({
-          ...addr,
-          principal: false // Todas las existentes dejan de ser principales
-        }));
-        updatedAddresses.push(newAddressData); // Agregamos la nueva como principal
-      } else {
-        console.log('Agregando nueva dirección sin cambiar principal');
-        updatedAddresses = [...addresses, newAddressData];
-      }
-      
-      console.log('Direcciones finales después de agregar:', updatedAddresses);
+      // Actualizar la lista de direcciones
+      const updatedAddresses = [...addresses, data.direccion];
+      console.log('Direcciones después de agregar:', updatedAddresses);
       onAddressesChange(updatedAddresses);
       showSuccess('Dirección agregada correctamente');
       
@@ -119,6 +104,7 @@ const AddressManager = ({ addresses = [], onAddressesChange, isEditing, showAllA
         comuna: '',
         ciudad: '',
         codigo_postal: '',
+        pais: 'Chile',
         principal: false,
       });
 
@@ -166,8 +152,8 @@ const AddressManager = ({ addresses = [], onAddressesChange, isEditing, showAllA
       });
 
       if (!response.ok) {
-        const error = await response.text();
-        throw new Error(error || 'Error al actualizar dirección');
+        const errorData = await response.json().catch(() => ({ mensaje: 'Error desconocido' }));
+        throw new Error(errorData.mensaje || errorData.message || 'Error al actualizar dirección');
       }
 
       const data = await response.json();
@@ -210,8 +196,8 @@ const AddressManager = ({ addresses = [], onAddressesChange, isEditing, showAllA
       });
 
       if (!response.ok) {
-        const error = await response.text();
-        throw new Error(error || 'Error al eliminar dirección');
+        const errorData = await response.json().catch(() => ({ mensaje: 'Error desconocido' }));
+        throw new Error(errorData.mensaje || errorData.message || 'Error al eliminar dirección');
       }
 
       const updatedAddresses = addresses.filter(addr => addr.direccion_id !== id);
@@ -257,14 +243,12 @@ const AddressManager = ({ addresses = [], onAddressesChange, isEditing, showAllA
       });
 
       if (!response.ok) {
-        const error = await response.text();
-        throw new Error(error || 'Error al establecer dirección principal');
+        const errorData = await response.json().catch(() => ({ mensaje: 'Error desconocido' }));
+        throw new Error(errorData.mensaje || errorData.message || 'Error al establecer dirección principal');
       }
 
       const data = await response.json();
       console.log('Datos recibidos del servidor (dirección principal):', data);
-      console.log('Tipo de data.direcciones:', typeof data.direcciones);
-      console.log('Es array data.direcciones:', Array.isArray(data.direcciones));
       
       // El backend devuelve todas las direcciones actualizadas
       if (data.direcciones && Array.isArray(data.direcciones)) {
@@ -273,15 +257,10 @@ const AddressManager = ({ addresses = [], onAddressesChange, isEditing, showAllA
       } else {
         // Fallback: actualizar localmente si el servidor no devuelve las direcciones
         console.log('Fallback: actualizando direcciones localmente');
-        console.log('Direcciones actuales antes del cambio:', addresses);
-        const updatedAddresses = addresses.map(addr => {
-          const isNewPrincipal = addr.direccion_id == id;
-          console.log(`Dirección ${addr.direccion_id} (tipo: ${typeof addr.direccion_id}) vs ${id} (tipo: ${typeof id}): principal = ${isNewPrincipal}`);
-          return {
-            ...addr,
-            principal: isNewPrincipal
-          };
-        });
+        const updatedAddresses = addresses.map(addr => ({
+          ...addr,
+          principal: addr.direccion_id == id
+        }));
         console.log('Direcciones actualizadas localmente:', updatedAddresses);
         onAddressesChange(updatedAddresses);
       }
@@ -410,30 +389,6 @@ const AddressManager = ({ addresses = [], onAddressesChange, isEditing, showAllA
         <div className="border rounded-lg p-4 space-y-4">
           <div className="flex justify-between items-center">
             <h4 className="text-md font-medium text-gray-900">Agregar Nueva Dirección</h4>
-            {/* Botón temporal para testing */}
-            <button
-              type="button"
-              onClick={() => {
-                console.log('Agregando dirección de prueba');
-                const testAddress = {
-                  direccion_id: Date.now(), // ID temporal
-                  usuario_id: 3,
-                  calle: 'Calle de Prueba',
-                  numero: '123',
-                  ciudad: 'Santiago',
-                  comuna: 'Las Condes',
-                  codigo_postal: '7550000',
-                  pais: 'Chile',
-                  principal: false
-                };
-                const newAddresses = [...addresses, testAddress];
-                console.log('Nuevas direcciones:', newAddresses);
-                onAddressesChange(newAddresses);
-              }}
-              className="px-3 py-1 text-xs bg-blue-500 text-white rounded hover:bg-blue-600"
-            >
-              + Dirección Test
-            </button>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
@@ -485,7 +440,18 @@ const AddressManager = ({ addresses = [], onAddressesChange, isEditing, showAllA
                 className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-brown-500 focus:border-brown-500"
               />
             </div>
-            <div className="flex items-center space-x-2 mt-6">
+            <div>
+              <label className="block text-sm font-medium text-gray-700">País</label>
+              <input
+                type="text"
+                value={newAddress.pais}
+                onChange={(e) => setNewAddress({ ...newAddress, pais: e.target.value })}
+                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-brown-500 focus:border-brown-500"
+              />
+            </div>
+          </div>
+          <div className="mt-4">
+            <div className="flex items-center space-x-2">
               <input
                 type="checkbox"
                 id="nueva-direccion-principal"

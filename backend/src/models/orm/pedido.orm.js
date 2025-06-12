@@ -22,7 +22,7 @@ const Pedido = sequelize.define('Pedido', {
   },
   direccion_id: { 
     type: DataTypes.INTEGER, 
-    allowNull: false,
+    allowNull: true, // Puede ser null para pedidos locales
     references: {
       model: 'direcciones',
       key: 'direccion_id'
@@ -38,7 +38,7 @@ const Pedido = sequelize.define('Pedido', {
   },
   carrito_id: { 
     type: DataTypes.INTEGER, 
-    allowNull: false,
+    allowNull: true, // Puede ser null para pedidos directos
     references: {
       model: 'carritos',
       key: 'carrito_id'
@@ -80,6 +80,15 @@ const Pedido = sequelize.define('Pedido', {
   fecha_pedido: { 
     type: DataTypes.DATE, 
     defaultValue: DataTypes.NOW
+  },
+  tipo_entrega: {
+    type: DataTypes.ENUM('local', 'domicilio', 'takeaway'),
+    allowNull: true,
+    defaultValue: 'local'
+  },
+  notas: {
+    type: DataTypes.TEXT,
+    allowNull: true
   },
   created_at: { 
     type: DataTypes.DATE, 

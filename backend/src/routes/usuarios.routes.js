@@ -238,7 +238,7 @@ router.put('/perfil', verificarToken, usuariosController.updatePerfil);
  * @swagger
  * /api/usuarios/cambiar-password:
  *   put:
- *     summary: Cambiar contraseña
+ *     summary: Cambiar contraseña de usuario
  *     tags:
  *       - Usuarios
  *     security:
@@ -263,19 +263,52 @@ router.put('/perfil', verificarToken, usuariosController.updatePerfil);
  *     responses:
  *       200:
  *         description: Contraseña actualizada correctamente
+ *       401:
+ *         description: No autenticado o contraseña actual incorrecta
+ */
+router.put('/cambiar-password', verificarToken, usuariosController.cambiarPassword);
+
+/**
+ * @swagger
+ * /api/usuarios/buscar:
+ *   get:
+ *     summary: Buscar clientes por nombre o teléfono
+ *     tags:
+ *       - Usuarios
+ *     parameters:
+ *       - in: query
+ *         name: q
+ *         required: true
+ *         schema:
+ *           type: string
+ *           minLength: 2
+ *         description: Término de búsqueda (nombre, apellido, teléfono o email)
+ *     responses:
+ *       200:
+ *         description: Lista de clientes encontrados
  *         content:
  *           application/json:
  *             schema:
- *               type: object
- *               properties:
- *                 mensaje:
- *                   type: string
- *       401:
- *         description: No autenticado o token inválido
+ *               type: array
+ *               items:
+ *                 type: object
+ *                 properties:
+ *                   id:
+ *                     type: integer
+ *                   nombre:
+ *                     type: string
+ *                   apellido:
+ *                     type: string
+ *                   email:
+ *                     type: string
+ *                   telefono:
+ *                     type: string
+ *                   nombreCompleto:
+ *                     type: string
  *       400:
- *         description: Error en la validación
+ *         description: Término de búsqueda inválido
  */
-router.put('/cambiar-password', verificarToken, usuariosController.cambiarPassword);
+router.get('/buscar', usuariosController.searchClientes);
 
 // Rutas protegidas
 router.use(verificarToken);

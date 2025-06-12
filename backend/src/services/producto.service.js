@@ -206,6 +206,37 @@ class ProductoService {
       throw error;
     }
   }
+  
+  /**
+   * Actualiza el stock de un producto
+   * @param {number} productoId - ID del producto
+   * @param {number} cantidad - Cantidad a sumar/restar (negativo para restar)
+   * @param {Object} transaction - Transacción de base de datos (opcional)
+   * @returns {Promise<Object>} - Producto actualizado
+   */
+  static async updateStock(productoId, cantidad, transaction = null) {
+    try {
+      const producto = await Producto.findByPk(productoId, { transaction });
+      
+      if (!producto) {
+        throw new Error('Producto no encontrado');
+      }
+      
+      const nuevoStock = producto.stock + cantidad;
+      
+      if (nuevoStock < 0) {
+        throw new Error(`Stock insuficiente. Stock actual: ${producto.stock}, cantidad solicitada: ${Math.abs(cantidad)}`);
+      }
+      
+      producto.stock = nuevoStock;
+      await producto.save({ transaction });
+      
+      return producto.toJSON();
+    } catch (error) {
+      console.error('Error al actualizar stock del producto:', error);
+      throw error;
+    }
+  }
 }
 
 module.exports = ProductoService; 

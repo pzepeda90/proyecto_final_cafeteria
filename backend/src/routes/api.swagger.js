@@ -327,6 +327,47 @@ const swaggerOptions = {
             }
           }
         },
+        Mesa: {
+          type: 'object',
+          required: ['numero', 'capacidad'],
+          properties: {
+            mesa_id: {
+              type: 'integer',
+              description: 'ID único de la mesa'
+            },
+            numero: {
+              type: 'string',
+              description: 'Número identificador de la mesa'
+            },
+            capacidad: {
+              type: 'integer',
+              description: 'Capacidad máxima de personas de la mesa'
+            },
+            ubicacion: {
+              type: 'string',
+              description: 'Ubicación física de la mesa en el local'
+            },
+            estado: {
+              type: 'string',
+              enum: ['disponible', 'ocupada', 'reservada', 'fuera_servicio'],
+              description: 'Estado actual de la mesa'
+            },
+            activa: {
+              type: 'boolean',
+              description: 'Indica si la mesa está activa en el sistema'
+            },
+            created_at: {
+              type: 'string',
+              format: 'date-time',
+              description: 'Fecha de creación del registro'
+            },
+            updated_at: {
+              type: 'string',
+              format: 'date-time',
+              description: 'Fecha de última actualización del registro'
+            }
+          }
+        },
         EstadoPedido: {
           type: 'object',
           required: ['nombre'],
@@ -392,6 +433,15 @@ const swaggerOptions = {
             carrito_id: {
               type: 'integer',
               description: 'ID del carrito asociado al pedido'
+            },
+            mesa_id: {
+              type: 'integer',
+              description: 'ID de la mesa asignada al pedido (para pedidos locales)'
+            },
+            tipo_entrega: {
+              type: 'string',
+              enum: ['local', 'delivery', 'takeaway'],
+              description: 'Tipo de entrega del pedido'
             }
           }
         },

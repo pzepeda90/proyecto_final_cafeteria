@@ -28,7 +28,7 @@ const UsersManagement = lazy(() => import('./pages/admin/UsersManagement'));
 // Seller Pages
 const MyProducts = lazy(() => import('./pages/seller/MyProducts'));
 const MyOrders = lazy(() => import('./pages/seller/MyOrders'));
-const SellerPOS = lazy(() => import('./pages/seller/SellerPOS'));
+const SellerPOS = lazy(() => import('./pages/seller/POS'));
 const SellerDashboard = lazy(() => import('./pages/seller/SellerDashboard'));
 
 // Client Pages

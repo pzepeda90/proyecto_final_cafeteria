@@ -192,6 +192,90 @@ class PedidoService {
       throw new Error(`Error al actualizar estado: ${error.message}`);
     }
   }
+
+  /**
+   * Crea un nuevo pedido directo (sin carrito)
+   * @param {Object} pedidoData - Datos del pedido directo
+   * @returns {Promise<Object>} - Pedido creado
+   */
+  static async createDirect(pedidoData) {
+    const transaction = await sequelize.transaction();
+    
+    try {
+      const {
+        usuario_id,
+        metodo_pago_id,
+        direccion_id,
+        tipo_entrega = 'local',
+        notas,
+        productos
+      } = pedidoData;
+      
+      // Obtener el ID del estado "pendiente"
+      const estadoPendiente = await EstadoPedido.findOne({
+        where: { nombre: 'pendiente' },
+        transaction
+      });
+      
+      const estado_pedido_id = estadoPendiente.estado_pedido_id;
+      
+      // Calcular subtotal, impuestos y total
+      let subtotal = 0;
+      for (const producto of productos) {
+        subtotal += producto.precio_unitario * producto.cantidad;
+      }
+      
+      const impuestos = subtotal * 0.16; // 16% de impuestos
+      const total = subtotal + impuestos;
+      
+      // Insertar registro de pedido (sin carrito_id para pedidos directos)
+      const pedido = await Pedido.create({
+        usuario_id,
+        estado_pedido_id,
+        metodo_pago_id,
+        direccion_id,
+        carrito_id: null, // Pedidos directos no tienen carrito
+        subtotal,
+        impuestos,
+        total,
+        fecha_pedido: new Date(),
+        tipo_entrega,
+        notas
+      }, { transaction });
+      
+      // Insertar detalles del pedido
+      for (const producto of productos) {
+        await DetallePedido.create({
+          pedido_id: pedido.pedido_id,
+          producto_id: producto.producto_id,
+          cantidad: producto.cantidad,
+          precio_unitario: producto.precio_unitario,
+          subtotal: producto.precio_unitario * producto.cantidad
+        }, { transaction });
+        
+        // Actualizar stock del producto
+        const ProductoService = require('./producto.service');
+        await ProductoService.updateStock(producto.producto_id, -producto.cantidad, transaction);
+      }
+      
+      // Registrar primer estado en historial
+      await HistorialEstadoPedido.create({
+        pedido_id: pedido.pedido_id,
+        estado_pedido_id,
+        fecha_cambio: new Date(),
+        comentario: 'Pedido directo creado desde POS'
+      }, { transaction });
+      
+      await transaction.commit();
+      
+      // Retornar el pedido completo
+      return this.findById(pedido.pedido_id);
+    } catch (error) {
+      await transaction.rollback();
+      console.error('Error al crear pedido directo:', error);
+      throw error;
+    }
+  }
 }
 
 module.exports = PedidoService; 

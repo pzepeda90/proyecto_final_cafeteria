@@ -164,13 +164,72 @@ class UsuarioService {
   }
 
   /**
-   * Verifica si una contraseña coincide con el hash almacenado
-   * @param {string} password - Contraseña a verificar
-   * @param {string} hash - Hash almacenado
+   * Compara una contraseña con su hash
+   * @param {string} password - Contraseña en texto plano
+   * @param {string} hash - Hash de la contraseña
    * @returns {Promise<boolean>} - Resultado de la comparación
    */
   static async comparePassword(password, hash) {
-    return bcrypt.compare(password, hash);
+    try {
+      return await bcrypt.compare(password, hash);
+    } catch (error) {
+      console.error('Error al comparar contraseña:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Busca clientes por nombre o teléfono
+   * @param {string} searchTerm - Término de búsqueda
+   * @returns {Promise<Array>} - Lista de clientes encontrados
+   */
+  static async searchClientes(searchTerm) {
+    try {
+      const { Op } = require('sequelize');
+      
+      const clientes = await Usuario.findAll({
+        where: {
+          activo: true,
+          [Op.or]: [
+            {
+              nombre: {
+                [Op.iLike]: `%${searchTerm}%`
+              }
+            },
+            {
+              apellido: {
+                [Op.iLike]: `%${searchTerm}%`
+              }
+            },
+            {
+              telefono: {
+                [Op.iLike]: `%${searchTerm}%`
+              }
+            },
+            {
+              email: {
+                [Op.iLike]: `%${searchTerm}%`
+              }
+            }
+          ]
+        },
+        attributes: ['usuario_id', 'nombre', 'apellido', 'email', 'telefono'],
+        limit: 20,
+        order: [['nombre', 'ASC'], ['apellido', 'ASC']]
+      });
+      
+      return clientes.map(cliente => ({
+        id: cliente.usuario_id,
+        nombre: cliente.nombre,
+        apellido: cliente.apellido,
+        email: cliente.email,
+        telefono: cliente.telefono,
+        nombreCompleto: `${cliente.nombre} ${cliente.apellido}`
+      }));
+    } catch (error) {
+      console.error('Error al buscar clientes:', error);
+      throw error;
+    }
   }
 }
 

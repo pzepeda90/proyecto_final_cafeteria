@@ -1,3 +1,4 @@
+const sequelize = require('../sequelize');
 const Usuario = require('./usuario.orm');
 const Rol = require('./rol.orm');
 const UsuarioRol = require('./usuario_rol.orm');
@@ -14,6 +15,7 @@ const MetodoPago = require('./metodo_pago.orm');
 const EstadoPedido = require('./estado_pedido.orm');
 const HistorialEstadoPedido = require('./historial_estado_pedido.orm');
 const Resena = require('./resena.orm');
+const Mesa = require('./mesa.orm');
 
 // Relaciones Usuario-Rol (N:M)
 Usuario.belongsToMany(Rol, { 
@@ -139,6 +141,7 @@ Producto.belongsTo(Vendedor, {
 });
 
 module.exports = {
+  sequelize,
   Usuario,
   Rol,
   UsuarioRol,
@@ -154,5 +157,6 @@ module.exports = {
   MetodoPago,
   EstadoPedido,
   HistorialEstadoPedido,
-  Resena
+  Resena,
+  Mesa
 }; 

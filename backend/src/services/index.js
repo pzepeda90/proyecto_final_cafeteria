@@ -13,6 +13,7 @@ const HistorialEstadoPedidoService = require('./historial_estado_pedido.service'
 const ImagenProductoService = require('./imagen_producto.service');
 const ResenaService = require('./resena.service');
 const RolService = require('./rol.service');
+const MesaService = require('./mesa.service');
 
 module.exports = {
   UsuarioService,
@@ -29,5 +30,6 @@ module.exports = {
   HistorialEstadoPedidoService,
   ImagenProductoService,
   ResenaService,
-  RolService
+  RolService,
+  MesaService
 }; 

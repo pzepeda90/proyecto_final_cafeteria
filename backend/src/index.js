@@ -17,6 +17,7 @@ const metodosPagoRoutes = require('./routes/metodos_pago.routes');
 const estadosPedidoRoutes = require('./routes/estados_pedido.routes');
 const rolesRoutes = require('./routes/roles.routes');
 const direccionesRoutes = require('./routes/direcciones.routes');
+const mesasRoutes = require('./routes/mesas.routes');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -48,10 +49,39 @@ app.use('/api/metodos-pago', metodosPagoRoutes);
 app.use('/api/estados-pedido', estadosPedidoRoutes);
 app.use('/api/roles', rolesRoutes);
 app.use('/api/direcciones', direccionesRoutes);
+app.use('/api/mesas', mesasRoutes);
 
 // Ruta de prueba
 app.get('/', (req, res) => {
   res.json({ mensaje: 'API de Cafetería El Bandito funcionando correctamente' });
+});
+
+// Middleware de manejo de errores global
+app.use((error, req, res, next) => {
+  console.error('Error capturado por middleware:', error);
+  
+  // Si ya se envió una respuesta, delegar al manejador de errores por defecto
+  if (res.headersSent) {
+    return next(error);
+  }
+  
+  // Determinar el código de estado
+  const status = error.status || error.statusCode || 500;
+  
+  // Determinar el mensaje de error
+  let mensaje = 'Error interno del servidor';
+  
+  if (error.message) {
+    mensaje = error.message;
+  } else if (error.code === 'VALIDACION') {
+    mensaje = 'Error de validación';
+  }
+  
+  // Responder con JSON
+  res.status(status).json({
+    mensaje,
+    error: process.env.NODE_ENV === 'development' ? error.stack : undefined
+  });
 });
 
 // Middleware para manejar 404

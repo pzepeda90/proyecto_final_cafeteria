@@ -422,6 +422,29 @@ const generarToken = (usuario) => {
   );
 };
 
+// Buscar clientes
+const searchClientes = async (req, res, next) => {
+  try {
+    const { q } = req.query; // query parameter para búsqueda
+    
+    if (!q || q.trim().length < 2) {
+      return res.status(400).json({ 
+        mensaje: 'El término de búsqueda debe tener al menos 2 caracteres' 
+      });
+    }
+    
+    const searchTerm = q.trim();
+    
+    // Buscar usuarios que coincidan con el término de búsqueda
+    const clientes = await UsuarioService.searchClientes(searchTerm);
+    
+    res.json(clientes);
+  } catch (error) {
+    console.error('Error al buscar clientes:', error);
+    next(error);
+  }
+};
+
 module.exports = {
   registro,
   login,
@@ -433,5 +456,6 @@ module.exports = {
   addDireccion,
   updateDireccion,
   deleteDireccion,
-  setDireccionPrincipal
+  setDireccionPrincipal,
+  searchClientes
 }; 
