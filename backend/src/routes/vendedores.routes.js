@@ -8,7 +8,7 @@
 const express = require('express');
 const router = express.Router();
 const vendedoresController = require('../controllers/vendedores.controller');
-const { verificarTokenVendedor, esAdmin } = require('../middlewares/auth.middleware');
+const { verificarTokenVendedor, verificarToken, esAdmin } = require('../middlewares/auth.middleware');
 
 /**
  * @swagger
@@ -56,7 +56,7 @@ router.post('/login', vendedoresController.login);
  *       500:
  *         description: Error del servidor
  */
-router.get('/', verificarTokenVendedor, vendedoresController.getAll);
+router.get('/', verificarToken, esAdmin, vendedoresController.getAll);
 
 /**
  * @swagger
@@ -89,7 +89,7 @@ router.get('/:id', verificarTokenVendedor, vendedoresController.getById);
  * @swagger
  * /api/vendedores:
  *   post:
- *     summary: Crear un nuevo vendedor
+ *     summary: Crear un nuevo vendedor (admin)
  *     tags: [Vendedores]
  *     security:
  *       - bearerAuth: []
@@ -122,10 +122,12 @@ router.get('/:id', verificarTokenVendedor, vendedoresController.getById);
  *         description: Datos inválidos
  *       401:
  *         description: No autorizado
+ *       403:
+ *         description: Permisos insuficientes
  *       500:
  *         description: Error del servidor
  */
-router.post('/', vendedoresController.create);
+router.post('/', verificarToken, esAdmin, vendedoresController.create);
 
 /**
  * @swagger
@@ -171,7 +173,7 @@ router.post('/', vendedoresController.create);
  *       500:
  *         description: Error del servidor
  */
-router.put('/:id', verificarTokenVendedor, vendedoresController.update);
+router.put('/:id', verificarToken, esAdmin, vendedoresController.update);
 
 /**
  * @swagger
@@ -241,6 +243,6 @@ router.put('/:id/cambiar-password', verificarTokenVendedor, vendedoresController
  *       500:
  *         description: Error del servidor
  */
-router.delete('/:id', verificarTokenVendedor, vendedoresController.delete);
+router.delete('/:id', verificarToken, esAdmin, vendedoresController.delete);
 
 module.exports = router; 

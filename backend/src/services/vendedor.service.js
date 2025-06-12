@@ -57,13 +57,29 @@ class VendedorService {
    */
   static async create(data) {
     try {
+      console.log('VendedorService.create - Datos recibidos:', data);
+      
       const { nombre, apellido, email, password, telefono } = data;
+      
+      console.log('VendedorService.create - Encriptando contraseña...');
       
       // Encriptar contraseña
       const salt = await bcrypt.genSalt(10);
       const password_hash = await bcrypt.hash(password, salt);
       
+      console.log('VendedorService.create - Contraseña encriptada, creando en BD...');
+      console.log('VendedorService.create - Datos a insertar:', {
+        usuario_id: 1, // Usar ID por defecto
+        nombre,
+        apellido,
+        email,
+        password_hash: '[HASH_PRESENTE]',
+        telefono,
+        activo: true
+      });
+      
       const vendedor = await Vendedor.create({
+        usuario_id: 1, // Agregar usuario_id por defecto (admin que crea el vendedor)
         nombre,
         apellido,
         email,
@@ -72,9 +88,16 @@ class VendedorService {
         activo: true
       });
       
+      console.log('VendedorService.create - Vendedor creado en BD:', vendedor.toJSON());
+      
       return vendedor.toJSON();
     } catch (error) {
-      console.error('Error al crear vendedor:', error);
+      console.error('VendedorService.create - Error detallado:', error);
+      console.error('VendedorService.create - Error name:', error.name);
+      console.error('VendedorService.create - Error message:', error.message);
+      if (error.errors) {
+        console.error('VendedorService.create - Validation errors:', error.errors);
+      }
       throw error;
     }
   }

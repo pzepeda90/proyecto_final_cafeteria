@@ -271,27 +271,48 @@ const getDirecciones = async (req, res) => {
 // Añadir dirección
 const addDireccion = async (req, res, next) => {
   try {
+    console.log('=== AGREGAR DIRECCIÓN ===');
+    console.log('Usuario ID:', req.usuario.id);
+    console.log('Datos recibidos:', req.body);
+    
     const schema = Joi.object({
       calle: Joi.string().min(2).max(255).required(),
+      numero: Joi.string().min(1).max(50).required(),
       ciudad: Joi.string().min(2).max(100).required(),
       comuna: Joi.string().min(2).max(100).required(),
       codigo_postal: Joi.string().min(2).max(20).required(),
+      pais: Joi.string().min(2).max(50).required(),
       principal: Joi.boolean().optional()
     });
     const { error } = schema.validate(req.body);
     if (error) return next({ status: 400, message: error.details[0].message, code: 'VALIDACION' });
     
-    const { calle, ciudad, comuna, codigo_postal, principal } = req.body;
+    const { calle, numero, ciudad, comuna, codigo_postal, pais, principal } = req.body;
     
     // Crear la dirección
-    const direccion = await DireccionService.create({
+    console.log('Creando dirección con datos:', {
       usuario_id: req.usuario.id,
       calle,
+      numero,
       ciudad,
       comuna,
       codigo_postal,
+      pais,
       principal: principal || false
     });
+    
+    const direccion = await DireccionService.create({
+      usuario_id: req.usuario.id,
+      calle,
+      numero,
+      ciudad,
+      comuna,
+      codigo_postal,
+      pais,
+      principal: principal || false
+    });
+    
+    console.log('Dirección creada exitosamente:', direccion);
     
     // Responder exitosamente
     res.status(201).json({
@@ -308,9 +329,11 @@ const updateDireccion = async (req, res, next) => {
   try {
     const schema = Joi.object({
       calle: Joi.string().min(2).max(255).required(),
+      numero: Joi.string().min(1).max(50).required(),
       ciudad: Joi.string().min(2).max(100).required(),
       comuna: Joi.string().min(2).max(100).required(),
       codigo_postal: Joi.string().min(2).max(20).required(),
+      pais: Joi.string().min(2).max(50).required(),
       principal: Joi.boolean().optional()
     });
     const { error } = schema.validate(req.body);
@@ -372,12 +395,15 @@ const setDireccionPrincipal = async (req, res, next) => {
     }
     
     // Establecer como principal
-    const direccionActualizada = await DireccionService.setPrincipal(id);
+    await DireccionService.setPrincipal(id);
+    
+    // Obtener todas las direcciones actualizadas
+    const direccionesActualizadas = await DireccionService.findByUsuarioId(req.usuario.id);
     
     // Responder exitosamente
     res.json({
       mensaje: 'Dirección establecida como principal',
-      direccion: direccionActualizada
+      direcciones: direccionesActualizadas
     });
   } catch (error) {
     next(error);

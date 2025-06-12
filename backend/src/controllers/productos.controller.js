@@ -162,11 +162,11 @@ const crearProducto = async (req, res, next) => {
     
     // Si es admin, usar el vendedor_id proporcionado o el predeterminado
     if (usuario && usuario.rol === 'admin') {
-      vendedor_id = value.vendedor_id || 1; // ID del vendedor por defecto
+      vendedor_id = value.vendedor_id || 3; // ID del vendedor existente
     } else {
       // Verificar si el usuario tiene perfil de vendedor
       // Por ahora, usamos el vendedor predeterminado
-      vendedor_id = 1; // ID del vendedor por defecto
+      vendedor_id = 3; // ID del vendedor existente
     }
     
     // Crear el producto con los datos validados

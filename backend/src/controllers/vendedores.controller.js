@@ -79,12 +79,30 @@ const vendedoresController = {
    */
   async create(req, res) {
     try {
+      console.log('=== INICIANDO CREACIÓN DE VENDEDOR ===');
+      console.log('Body recibido:', req.body);
+      console.log('Usuario que hace la request:', req.usuario);
+      
       // Validar datos de entrada
       const { nombre, apellido, email, password, telefono } = req.body;
       
+      console.log('Datos extraídos:', { nombre, apellido, email, password: password ? '[PRESENTE]' : '[AUSENTE]', telefono });
+      
       if (!nombre || !apellido || !email || !password) {
+        console.log('Error: Campos obligatorios faltantes');
         return res.status(400).json({ mensaje: 'Todos los campos son obligatorios' });
       }
+      
+      console.log('Validación básica pasada, verificando email existente...');
+      
+      // Verificar si el email ya existe
+      const vendedorExistente = await VendedorService.findByEmail(email);
+      if (vendedorExistente) {
+        console.log('Error: Email ya registrado');
+        return res.status(400).json({ mensaje: 'El email ya está registrado' });
+      }
+      
+      console.log('Email disponible, creando vendedor...');
       
       // Crear vendedor
       const vendedor = await VendedorService.create({
@@ -94,6 +112,8 @@ const vendedoresController = {
         password,
         telefono
       });
+      
+      console.log('Vendedor creado exitosamente:', vendedor);
       
       res.status(201).json({
         mensaje: 'Vendedor creado exitosamente',
@@ -106,7 +126,10 @@ const vendedoresController = {
         }
       });
     } catch (error) {
-      console.error('Error al crear vendedor:', error);
+      console.error('=== ERROR EN CREACIÓN DE VENDEDOR ===');
+      console.error('Error completo:', error);
+      console.error('Stack trace:', error.stack);
+      console.error('Mensaje:', error.message);
       
       if (error.message === 'El email ya está registrado') {
         return res.status(400).json({ mensaje: error.message });
@@ -116,7 +139,25 @@ const vendedoresController = {
         return res.status(400).json({ mensaje: error.message });
       }
       
-      res.status(500).json({ mensaje: 'Error al crear vendedor' });
+      if (error.name === 'SequelizeUniqueConstraintError') {
+        console.error('Error de constraint único en base de datos');
+        return res.status(400).json({ mensaje: 'El email ya está registrado en el sistema' });
+      }
+      
+      if (error.name === 'SequelizeValidationError') {
+        console.error('Error de validación de Sequelize:', error.errors);
+        return res.status(400).json({ 
+          mensaje: 'Datos inválidos', 
+          detalles: error.errors.map(e => e.message) 
+        });
+      }
+      
+      if (error.name === 'SequelizeConnectionError') {
+        console.error('Error de conexión a la base de datos');
+        return res.status(500).json({ mensaje: 'Error de conexión a la base de datos' });
+      }
+      
+      res.status(500).json({ mensaje: 'Error al crear vendedor', detalle: error.message });
     }
   },
   
