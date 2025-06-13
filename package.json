@@ -1,0 +1,17 @@
+{
+  "name": "cafeteria-lbandito-fullstack",
+  "version": "1.0.0",
+  "description": "Sistema completo de gestión de cafetería con POS",
+  "scripts": {
+    "dev": "./start_dev.sh",
+    "start": "./start_dev.sh",
+    "backend": "cd backend && npm run dev",
+    "frontend": "cd frontend && npm run dev",
+    "build": "cd frontend && npm run build",
+    "test": "cd backend && npm test",
+    "deploy": "./deploy.sh"
+  },
+  "keywords": ["nodejs", "react", "postgresql", "pos", "cafeteria"],
+  "author": "Tu Nombre",
+  "license": "ISC"
+} 

@@ -1,5 +1,8 @@
-// Base URL de la API desde variables de entorno
-export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+// Base URL de la API
+export const API_BASE_URL = process.env.NODE_ENV === 'test' 
+  ? process.env.VITE_API_BASE_URL || 'http://localhost:3000/api'
+  : import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api';
+// El mock para los tests se debe crear en __mocks__ o setupEnv.js
 
 // Endpoints de Autenticación
 export const AUTH_ENDPOINTS = {

@@ -223,6 +223,141 @@ const actualizarEstadoPedido = async (req, res, next) => {
   }
 };
 
+// Obtener pedidos del usuario autenticado
+const obtenerMisPedidos = async (req, res) => {
+  try {
+    const { estado, page = 1, limit = 10 } = req.query;
+    
+    const options = {
+      usuario_id: req.usuario.id,
+      page: parseInt(page),
+      limit: parseInt(limit)
+    };
+    
+    if (estado) {
+      options.estado = estado;
+    }
+    
+    const pedidos = await PedidoService.findByUsuario(options);
+    res.json(pedidos);
+  } catch (error) {
+    console.error('Error al obtener mis pedidos:', error);
+    res.status(500).json({ mensaje: 'Error al obtener pedidos' });
+  }
+};
+
+// Obtener estadísticas de pedidos (Admin/Vendedor)
+const obtenerEstadisticas = async (req, res) => {
+  try {
+    const { periodo = 'mes' } = req.query;
+    
+    const stats = await PedidoService.getStatistics(periodo);
+    res.json(stats);
+  } catch (error) {
+    console.error('Error al obtener estadísticas:', error);
+    res.status(500).json({ mensaje: 'Error al obtener estadísticas' });
+  }
+};
+
+// Cancelar pedido (Cliente o Admin)
+const cancelarPedido = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { motivo } = req.body;
+    
+    // Verificar si el pedido existe
+    const pedido = await PedidoService.findById(id);
+    
+    if (!pedido) {
+      return res.status(404).json({ mensaje: 'Pedido no encontrado' });
+    }
+    
+    // Verificar permisos (solo admin o el dueño del pedido)
+    const usuario = await UsuarioService.findById(req.usuario.id);
+    const esAdmin = usuario && usuario.Roles && usuario.Roles.some(rol => rol.nombre === 'admin');
+    
+    if (!esAdmin && pedido.usuario_id !== req.usuario.id) {
+      return res.status(403).json({ mensaje: 'No tienes permiso para cancelar este pedido' });
+    }
+    
+    // Verificar si el pedido se puede cancelar
+    const estadosNoCancelables = ['entregado', 'cancelado'];
+    if (estadosNoCancelables.includes(pedido.EstadoPedido?.nombre)) {
+      return res.status(400).json({ 
+        mensaje: `No se puede cancelar un pedido ${pedido.EstadoPedido.nombre}` 
+      });
+    }
+    
+    // Cancelar el pedido
+    const pedidoCancelado = await PedidoService.cancel(id, motivo);
+    
+    res.json({
+      mensaje: 'Pedido cancelado correctamente',
+      pedido: pedidoCancelado
+    });
+  } catch (error) {
+    console.error('Error al cancelar pedido:', error);
+    res.status(500).json({ mensaje: 'Error al cancelar pedido' });
+  }
+};
+
+// Actualizar múltiples pedidos (Admin/Vendedor)
+const actualizarMultiplesPedidos = async (req, res) => {
+  try {
+    const schema = Joi.object({
+      pedidos: Joi.array().items(
+        Joi.object({
+          pedido_id: Joi.number().integer().required(),
+          estado_pedido_id: Joi.number().integer().required(),
+          comentario: Joi.string().allow('', null).optional()
+        })
+      ).min(1).required()
+    });
+    
+    const { error } = schema.validate(req.body);
+    if (error) {
+      return res.status(400).json({ mensaje: error.details[0].message });
+    }
+    
+    const { pedidos } = req.body;
+    
+    // Actualizar pedidos en lote
+    const resultados = await PedidoService.updateMultiple(pedidos);
+    
+    res.json({
+      mensaje: `${resultados.updated} pedidos actualizados correctamente`,
+      resultados
+    });
+  } catch (error) {
+    console.error('Error al actualizar múltiples pedidos:', error);
+    res.status(500).json({ mensaje: 'Error al actualizar pedidos' });
+  }
+};
+
+// Eliminar pedido (Solo Admin)
+const eliminarPedido = async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    // Verificar si el pedido existe
+    const pedido = await PedidoService.findById(id);
+    
+    if (!pedido) {
+      return res.status(404).json({ mensaje: 'Pedido no encontrado' });
+    }
+    
+    // Eliminar el pedido
+    await PedidoService.delete(id);
+    
+    res.json({
+      mensaje: 'Pedido eliminado correctamente'
+    });
+  } catch (error) {
+    console.error('Error al eliminar pedido:', error);
+    res.status(500).json({ mensaje: 'Error al eliminar pedido' });
+  }
+};
+
 // Obtener historial de estados de un pedido
 const obtenerHistorialEstados = async (req, res) => {
   const { id } = req.params;
@@ -251,9 +386,14 @@ const obtenerHistorialEstados = async (req, res) => {
 
 module.exports = {
   obtenerPedidos,
+  obtenerMisPedidos,
+  obtenerEstadisticas,
   obtenerPedidoPorId,
+  obtenerHistorialEstados,
   crearPedido,
   crearPedidoDirecto,
   actualizarEstadoPedido,
-  obtenerHistorialEstados
+  cancelarPedido,
+  actualizarMultiplesPedidos,
+  eliminarPedido
 }; 

@@ -397,6 +397,42 @@ const validarCuerpo = (schema) => {
   };
 };
 
+// Funciones específicas para tests
+const handleValidationErrors = (req, res, next) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.status(400).json({
+      error: 'Errores de validación',
+      details: errors.array()
+    });
+  }
+  next();
+};
+
+// Validaciones simplificadas para tests
+const validateUsuario = [
+  body('nombre').trim().notEmpty().withMessage('El nombre es requerido'),
+  body('apellido').trim().notEmpty().withMessage('El apellido es requerido'),
+  body('email').isEmail().withMessage('El email debe ser válido'),
+  body('password').isLength({ min: 6 }).withMessage('La contraseña debe tener al menos 6 caracteres'),
+  body('telefono').optional().isString(),
+  body('rol_id').optional().isInt()
+];
+
+const validateProducto = [
+  body('nombre').trim().notEmpty().withMessage('El nombre es requerido'),
+  body('precio').isFloat({ min: 0 }).withMessage('El precio debe ser un número positivo'),
+  body('descripcion').optional().isString(),
+  body('categoria').optional().isString(),
+  body('stock').isInt({ min: 0 }).withMessage('El stock debe ser un número entero positivo')
+];
+
+const validatePedido = [
+  body('direccion_entrega').trim().notEmpty().withMessage('La dirección de entrega es requerida'),
+  body('metodo_pago').isIn(['efectivo', 'tarjeta', 'transferencia']).withMessage('Método de pago inválido'),
+  body('notas').optional().isString()
+];
+
 module.exports = {
   validateRequest,
   validateUserRegistration,
@@ -412,5 +448,10 @@ module.exports = {
   validarDireccion: validarCuerpo(direccionSchema),
   validarResena: validarCuerpo(resenaSchema),
   validarAgregarAlCarrito: validarCuerpo(agregarAlCarritoSchema),
-  validarCrearPedido: validarCuerpo(crearPedidoSchema)
+  validarCrearPedido: validarCuerpo(crearPedidoSchema),
+  // Para tests
+  handleValidationErrors,
+  validateUsuario,
+  validateProducto,
+  validatePedido
 }; 

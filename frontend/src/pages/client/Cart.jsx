@@ -1,6 +1,6 @@
 import { useSelector, useDispatch } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
-import { updateQuantity, removeFromCart, clearCart } from '../../store/slices/cartSlice';
+import { updateQuantity, removeItem, clearCart } from '../../store/slices/cartSlice';
 import Button from '../../components/ui/Button';
 import { PRIVATE_ROUTES } from '../../constants/routes';
 import { ROLES } from '../../constants/roles';
@@ -43,7 +43,7 @@ const Cart = () => {
   };
 
   const handleRemoveItem = (id, name) => {
-    dispatch(removeFromCart(id));
+    dispatch(removeItem(id));
     Toast.fire({
       icon: 'error',
       title: `${name} eliminado del carrito`,

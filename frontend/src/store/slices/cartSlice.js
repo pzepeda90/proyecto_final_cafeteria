@@ -3,7 +3,8 @@ import { createSlice } from '@reduxjs/toolkit';
 const initialState = {
   items: [],
   total: 0,
-  quantity: 0,
+  totalItems: 0,
+  totalAmount: 0,
   shippingAddress: null,
   paymentMethod: null,
   notes: '',
@@ -31,35 +32,32 @@ const cartSlice = createSlice({
   name: 'cart',
   initialState,
   reducers: {
-    addToCart: (state, action) => {
-      const { id, quantity = 1 } = action.payload;
-      const existingItem = state.items.find(item => item.id === id);
-
+    addItem: (state, action) => {
+      const existingItem = state.items.find(item => item.id === action.payload.id);
       if (existingItem) {
-        existingItem.quantity += quantity;
+        const newQuantity = Math.min(existingItem.quantity + 1, existingItem.stock);
+        existingItem.quantity = newQuantity;
       } else {
-        state.items.push({ ...action.payload, quantity });
+        state.items.push(action.payload);
       }
-
-      const totals = calculateTotals(state.items);
-      state.total = totals.total;
-      state.quantity = totals.quantity;
+      state.total = state.items.reduce((total, item) => total + (item.price * item.quantity), 0);
+      state.totalItems = state.items.reduce((total, item) => total + item.quantity, 0);
+      state.totalAmount = state.items.reduce((total, item) => total + (item.price * item.quantity), 0);
     },
-    removeFromCart: (state, action) => {
+    removeItem: (state, action) => {
       state.items = state.items.filter(item => item.id !== action.payload);
-      const totals = calculateTotals(state.items);
-      state.total = totals.total;
-      state.quantity = totals.quantity;
+      state.total = state.items.reduce((total, item) => total + (item.price * item.quantity), 0);
+      state.totalItems = state.items.reduce((total, item) => total + item.quantity, 0);
+      state.totalAmount = state.items.reduce((total, item) => total + (item.price * item.quantity), 0);
     },
     updateQuantity: (state, action) => {
       const { id, quantity } = action.payload;
       const item = state.items.find(item => item.id === id);
-      
       if (item) {
-        item.quantity = quantity;
-        const totals = calculateTotals(state.items);
-        state.total = totals.total;
-        state.quantity = totals.quantity;
+        item.quantity = Math.min(Math.max(1, quantity), item.stock);
+        state.total = state.items.reduce((total, item) => total + (item.price * item.quantity), 0);
+        state.totalItems = state.items.reduce((total, item) => total + item.quantity, 0);
+        state.totalAmount = state.items.reduce((total, item) => total + (item.price * item.quantity), 0);
       }
     },
     setShippingAddress: (state, action) => {
@@ -74,7 +72,8 @@ const cartSlice = createSlice({
     clearCart: (state) => {
       state.items = [];
       state.total = 0;
-      state.quantity = 0;
+      state.totalItems = 0;
+      state.totalAmount = 0;
       state.shippingAddress = null;
       state.paymentMethod = null;
       state.notes = '';
@@ -109,8 +108,8 @@ const cartSlice = createSlice({
 });
 
 export const {
-  addToCart,
-  removeFromCart,
+  addItem,
+  removeItem,
   updateQuantity,
   setShippingAddress,
   setPaymentMethod,
@@ -125,5 +124,7 @@ export const {
   deleteCart,
   resetState,
 } = cartSlice.actions;
+
+export const selectCart = (state) => state.cart;
 
 export default cartSlice.reducer; 

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useDispatch } from 'react-redux';
-import { addToCart } from '../../store/slices/cartSlice';
+import { addItem } from '../../store/slices/cartSlice';
 import { products, categories } from '../../mocks/productsMock';
 import ProductCard from '../../components/products/ProductCard';
 
@@ -21,7 +21,7 @@ const ProductsPage = () => {
   }, [selectedCategory, searchTerm]);
 
   const handleAddToCart = (product) => {
-    dispatch(addToCart({ ...product, quantity: 1 }));
+    dispatch(addItem({ ...product, quantity: 1 }));
   };
 
   return (

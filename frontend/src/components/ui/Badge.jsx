@@ -22,13 +22,13 @@ const Badge = ({
 }) => {
   return (
     <span
-      className={\`
+      className={`
         inline-flex items-center justify-center
         font-medium rounded-full
-        \${variants[variant]}
-        \${sizes[size]}
-        \${className}
-      \`.trim()}
+        ${variants[variant]}
+        ${sizes[size]}
+        ${className}
+      `.trim()}
       {...props}
     >
       {children}
