@@ -3,6 +3,7 @@ import { formatCurrency } from '../../../utils/formatters';
 import Button from '../../../components/ui/Button';
 import Modal from '../../../components/ui/Modal';
 import ProductsService from '../../../services/productsService';
+import Swal from 'sweetalert2';
 
 const ProductsManagement = () => {
   const [products, setProducts] = useState([]);
@@ -11,7 +12,6 @@ const ProductsManagement = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editProduct, setEditProduct] = useState(null);
-  const [productToDelete, setProductToDelete] = useState(null);
   const [loading, setLoading] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
 
@@ -38,7 +38,12 @@ const ProductsManagement = () => {
       setCategories(categoriesResponse || []);
     } catch (error) {
       console.error('❌ Error cargando datos iniciales:', error);
-      alert(error.message || 'Error al cargar datos');
+      Swal.fire({
+        icon: 'error',
+        title: 'Error al cargar datos',
+        text: error.message || 'No se pudieron cargar los productos y categorías',
+        confirmButtonColor: '#ef4444'
+      });
       
       // Usar datos de respaldo en caso de error
       setProducts([]);
@@ -106,7 +111,12 @@ const ProductsManagement = () => {
       ));
     } catch (error) {
       console.error('❌ Error al cambiar disponibilidad:', error);
-      alert(error.message || 'Error al cambiar disponibilidad');
+      Swal.fire({
+        icon: 'error',
+        title: 'Error',
+        text: error.message || 'No se pudo cambiar la disponibilidad del producto',
+        confirmButtonColor: '#ef4444'
+      });
     } finally {
       setLoading(false);
     }
@@ -128,51 +138,96 @@ const ProductsManagement = () => {
             ? { ...updatedProduct, id: updatedProduct.producto_id || updatedProduct.id }
             : p
         ));
+
+        // Alerta de éxito para actualización
+        Swal.fire({
+          icon: 'success',
+          title: '¡Producto actualizado!',
+          text: `El producto "${productData.name}" ha sido actualizado correctamente`,
+          showConfirmButton: false,
+          timer: 2000,
+          timerProgressBar: true
+        });
       } else {
         // Crear nuevo producto
         const newProduct = await ProductsService.createProduct(productData);
         
         // Agregar al estado local
         setProducts([...products, { ...newProduct, id: newProduct.producto_id || newProduct.id }]);
+
+        // Alerta de éxito para creación
+        Swal.fire({
+          icon: 'success',
+          title: '¡Producto creado!',
+          text: `El producto "${productData.name}" ha sido agregado correctamente`,
+          showConfirmButton: false,
+          timer: 2000,
+          timerProgressBar: true
+        });
       }
       
       setIsModalOpen(false);
       setEditProduct(null);
     } catch (error) {
       console.error('❌ Error al guardar producto:', error);
-      alert(error.message || 'Error al guardar producto');
+      Swal.fire({
+        icon: 'error',
+        title: 'Error al guardar',
+        text: error.message || 'No se pudo guardar el producto. Inténtalo nuevamente.',
+        confirmButtonColor: '#ef4444'
+      });
     } finally {
       setLoading(false);
     }
   };
 
   // Eliminar producto
-  const handleDeleteProduct = (product) => {
-    setProductToDelete(product);
-  };
-  
-  const confirmDeleteProduct = async () => {
-    if (!productToDelete) return;
-    
-    try {
-      setLoading(true);
-      await ProductsService.deleteProduct(productToDelete.producto_id || productToDelete.id);
-      
-      // Remover del estado local
-      setProducts(products.filter(p => 
-        (p.producto_id || p.id) !== (productToDelete.producto_id || productToDelete.id)
-      ));
-      
-      setProductToDelete(null);
-    } catch (error) {
-      console.error('❌ Error al eliminar producto:', error);
-      alert(error.message || 'Error al eliminar producto');
-    } finally {
-      setLoading(false);
+  const handleDeleteProduct = async (product) => {
+    const result = await Swal.fire({
+      title: '¿Eliminar producto?',
+      text: `¿Estás seguro de que deseas eliminar "${product.nombre || product.name}"? Esta acción no se puede deshacer.`,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#ef4444',
+      cancelButtonColor: '#6b7280',
+      confirmButtonText: 'Sí, eliminar',
+      cancelButtonText: 'Cancelar',
+      reverseButtons: true
+    });
+
+    if (result.isConfirmed) {
+      try {
+        setLoading(true);
+        await ProductsService.deleteProduct(product.producto_id || product.id);
+        
+        // Remover del estado local
+        setProducts(products.filter(p => 
+          (p.producto_id || p.id) !== (product.producto_id || product.id)
+        ));
+
+        // Alerta de éxito
+        Swal.fire({
+          icon: 'success',
+          title: '¡Producto eliminado!',
+          text: `El producto "${product.nombre || product.name}" ha sido eliminado correctamente`,
+          showConfirmButton: false,
+          timer: 2000,
+          timerProgressBar: true
+        });
+        
+      } catch (error) {
+        console.error('❌ Error al eliminar producto:', error);
+        Swal.fire({
+          icon: 'error',
+          title: 'Error al eliminar',
+          text: error.message || 'No se pudo eliminar el producto. Inténtalo nuevamente.',
+          confirmButtonColor: '#ef4444'
+        });
+      } finally {
+        setLoading(false);
+      }
     }
   };
-  
-  const cancelDeleteProduct = () => setProductToDelete(null);
 
   if (initialLoading) {
     return (
@@ -413,13 +468,14 @@ const ProductsManagement = () => {
         title={editProduct?.id ? 'Editar Producto' : 'Nuevo Producto'} 
         size="lg"
       >
-        <form
-          onSubmit={(e) => {
-            e.preventDefault();
-            handleSaveProduct(editProduct);
-          }}
-          className="space-y-4 max-h-[70vh] overflow-y-auto"
-        >
+        <div className="max-w-2xl mx-auto">
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              handleSaveProduct(editProduct);
+            }}
+            className="space-y-6 max-h-[70vh] overflow-y-auto pr-2"
+          >
           {/* Nombre y Categoría */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
@@ -527,13 +583,13 @@ const ProductsManagement = () => {
           </div>
 
           {/* Botones */}
-          <div className="flex flex-col sm:flex-row justify-end gap-2 sm:gap-2 pt-4 border-t">
+          <div className="flex flex-col sm:flex-row justify-end gap-3 sm:gap-4 pt-6 border-t border-gray-200">
             <Button 
               variant="secondary" 
               type="button" 
               onClick={() => setIsModalOpen(false)} 
               disabled={loading}
-              className="w-full sm:w-auto order-2 sm:order-1"
+              className="w-full sm:w-auto order-2 sm:order-1 px-6 py-2.5"
             >
               Cancelar
             </Button>
@@ -541,46 +597,12 @@ const ProductsManagement = () => {
               variant="primary" 
               type="submit" 
               disabled={loading}
-              className="w-full sm:w-auto order-1 sm:order-2"
+              className="w-full sm:w-auto order-1 sm:order-2 px-6 py-2.5"
             >
-              {loading ? 'Guardando...' : 'Guardar'}
+              {loading ? 'Guardando...' : (editProduct?.id ? 'Actualizar Producto' : 'Crear Producto')}
             </Button>
           </div>
         </form>
-      </Modal>
-
-      {/* Modal de confirmación de eliminación */}
-      <Modal 
-        isOpen={!!productToDelete} 
-        onClose={cancelDeleteProduct} 
-        title="Eliminar Producto" 
-        size="sm"
-      >
-        <div className="space-y-4">
-          <p className="text-sm sm:text-base">
-            ¿Estás seguro de que deseas eliminar el producto{' '}
-            <span className="font-semibold">
-              {productToDelete?.nombre || productToDelete?.name}
-            </span>?
-          </p>
-          <div className="flex flex-col sm:flex-row justify-end gap-2">
-            <Button 
-              variant="secondary" 
-              onClick={cancelDeleteProduct} 
-              disabled={loading}
-              className="w-full sm:w-auto order-2 sm:order-1"
-            >
-              Cancelar
-            </Button>
-            <Button 
-              variant="danger" 
-              onClick={confirmDeleteProduct} 
-              disabled={loading}
-              className="w-full sm:w-auto order-1 sm:order-2"
-            >
-              {loading ? 'Eliminando...' : 'Eliminar'}
-            </Button>
-          </div>
         </div>
       </Modal>
     </div>

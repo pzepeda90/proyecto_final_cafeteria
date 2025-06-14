@@ -45,8 +45,8 @@ class DashboardService {
       );
 
       // Calcular estadísticas
-      const ventasHoy = pedidosHoy.reduce((sum, pedido) => sum + (pedido.total || 0), 0);
-      const ventasMes = pedidosMes.reduce((sum, pedido) => sum + (pedido.total || 0), 0);
+      const ventasHoy = pedidosHoy.reduce((sum, pedido) => sum + parseFloat(pedido.total || 0), 0);
+      const ventasMes = pedidosMes.reduce((sum, pedido) => sum + parseFloat(pedido.total || 0), 0);
       const clientesHoy = new Set(pedidosHoy.map(p => p.usuario_id)).size;
       const clientesMes = new Set(pedidosMes.map(p => p.usuario_id)).size;
       const ticketPromedio = pedidosHoy.length > 0 ? ventasHoy / pedidosHoy.length : 0;
@@ -62,7 +62,7 @@ class DashboardService {
       const gastosOperativos = ventasMes * 0.25;
 
       // Rotación de inventario (estimada)
-      const valorInventario = productos.data.reduce((sum, p) => sum + (p.precio * p.stock), 0);
+      const valorInventario = productos.data.reduce((sum, p) => sum + (parseFloat(p.precio || 0) * parseInt(p.stock || 0)), 0);
       const rotacionInventario = valorInventario > 0 ? cmv / valorInventario : 0;
 
       return {
@@ -115,7 +115,7 @@ class DashboardService {
         const fechaPedido = new Date(pedido.fecha_pedido).toISOString().split('T')[0];
         const dayData = last30Days.find(day => day.fecha === fechaPedido);
         if (dayData) {
-          dayData.ventas += pedido.total || 0;
+          dayData.ventas += parseFloat(pedido.total || 0);
         }
       });
 
@@ -151,7 +151,7 @@ class DashboardService {
         const fechaPedido = new Date(pedido.fecha_pedido);
         if (fechaPedido.getFullYear() === currentYear) {
           const mesIndex = fechaPedido.getMonth();
-          ventasPorMes[mesIndex].ventas += pedido.total || 0;
+          ventasPorMes[mesIndex].ventas += parseFloat(pedido.total || 0);
         }
       });
 
@@ -218,7 +218,7 @@ class DashboardService {
       // Simular empleados (en un sistema real, esto vendría de la base de datos)
       const empleados = ['Ana García', 'Luis Martínez', 'Pedro Silva', 'Sofía López'];
       const totalPedidos = pedidosHoy.length;
-      const totalVentas = pedidosHoy.reduce((sum, pedido) => sum + (pedido.total || 0), 0);
+      const totalVentas = pedidosHoy.reduce((sum, pedido) => sum + parseFloat(pedido.total || 0), 0);
 
       return empleados.map((empleado, index) => {
         // Distribuir pedidos y ventas de manera realista
@@ -263,7 +263,7 @@ class DashboardService {
         const ventasMes = pedidos.filter(pedido => {
           const fechaPedido = new Date(pedido.fecha_pedido);
           return fechaPedido.getFullYear() === currentYear && fechaPedido.getMonth() === mesIndex;
-        }).reduce((sum, pedido) => sum + (pedido.total || 0), 0);
+        }).reduce((sum, pedido) => sum + parseFloat(pedido.total || 0), 0);
 
         const inventarioPromedio = productos.reduce((sum, producto) => 
           sum + (producto.precio * producto.stock), 0

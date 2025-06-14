@@ -440,7 +440,7 @@ const swaggerOptions = {
             },
             tipo_entrega: {
               type: 'string',
-              enum: ['local', 'delivery', 'takeaway'],
+              enum: ['local', 'domicilio', 'takeaway', 'dine_in'],
               description: 'Tipo de entrega del pedido'
             }
           }

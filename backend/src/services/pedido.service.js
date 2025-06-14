@@ -1,5 +1,46 @@
 const { Pedido, Usuario, EstadoPedido, DetallePedido, MetodoPago, Direccion, Producto, HistorialEstadoPedido } = require('../models/orm');
 const { sequelize } = require('../models/orm/index');
+const { Op } = require('sequelize');
+
+/**
+ * Genera un número de pedido único
+ * @returns {Promise<string>} - Número de pedido único
+ */
+async function generateOrderNumber(transaction = null) {
+  const today = new Date();
+  const year = today.getFullYear().toString().substr(-2);
+  const month = (today.getMonth() + 1).toString().padStart(2, '0');
+  const day = today.getDate().toString().padStart(2, '0');
+  
+  // Formato: YYMMDD-XXXX (donde XXXX es un número secuencial)
+  const prefix = `${year}${month}${day}`;
+  
+  // Buscar el último número de pedido del día con transacción
+  const queryOptions = {
+    where: {
+      numero_pedido: {
+        [Op.like]: `${prefix}-%`
+      }
+    },
+    order: [['numero_pedido', 'DESC']],
+    lock: transaction ? transaction.LOCK.UPDATE : undefined
+  };
+  
+  if (transaction) {
+    queryOptions.transaction = transaction;
+  }
+  
+  const lastOrder = await Pedido.findOne(queryOptions);
+  
+  let sequence = 1;
+  if (lastOrder) {
+    const lastSequence = parseInt(lastOrder.numero_pedido.split('-')[1]);
+    sequence = lastSequence + 1;
+  }
+  
+  const sequenceStr = sequence.toString().padStart(4, '0');
+  return `${prefix}-${sequenceStr}`;
+}
 
 class PedidoService {
   /**
@@ -97,13 +138,20 @@ class PedidoService {
         productos
       } = pedidoData;
       
-      // Obtener el ID del estado "pendiente"
+      // Obtener el ID del estado "Pendiente"
       const estadoPendiente = await EstadoPedido.findOne({
-        where: { nombre: 'pendiente' },
+        where: { nombre: 'Pendiente' },
         transaction
       });
       
+      if (!estadoPendiente) {
+        throw new Error('Estado "Pendiente" no encontrado en la base de datos');
+      }
+      
       const estado_pedido_id = estadoPendiente.estado_pedido_id;
+      
+      // Generar número de pedido único
+      const numero_pedido = await generateOrderNumber(transaction);
       
       // Calcular subtotal, impuestos y total
       let subtotal = 0;
@@ -111,11 +159,12 @@ class PedidoService {
         subtotal += producto.precio_unitario * producto.cantidad;
       }
       
-      const impuestos = subtotal * 0.16; // 16% de impuestos
+      const impuestos = subtotal * 0.19; // 19% de impuestos
       const total = subtotal + impuestos;
       
       // Insertar registro de pedido
       const pedido = await Pedido.create({
+        numero_pedido,
         usuario_id,
         estado_pedido_id,
         metodo_pago_id,
@@ -168,15 +217,26 @@ class PedidoService {
     const transaction = await sequelize.transaction();
     
     try {
-      const pedido = await Pedido.findByPk(id, { transaction });
+      const pedido = await Pedido.findByPk(id, { 
+        include: [{ model: EstadoPedido }],
+        transaction 
+      });
       
       if (!pedido) {
         throw new Error('Pedido no encontrado');
       }
       
+      // Obtener información del nuevo estado
+      const nuevoEstado = await EstadoPedido.findByPk(estadoId, { transaction });
+      if (!nuevoEstado) {
+        throw new Error('Estado de pedido no encontrado');
+      }
+      
+      // Actualizar el estado del pedido
       pedido.estado_pedido_id = estadoId;
       await pedido.save({ transaction });
       
+      // Registrar en historial
       await HistorialEstadoPedido.create({
         pedido_id: id,
         estado_pedido_id: estadoId,
@@ -184,7 +244,62 @@ class PedidoService {
         comentario
       }, { transaction });
       
+      // Si el pedido se entrega o cancela y tiene mesa asignada, liberar la mesa
+      if (['Entregado', 'Cancelado'].includes(nuevoEstado.nombre) && pedido.mesa_id) {
+        const MesaService = require('./mesa.service');
+        
+        // Verificar si hay otros pedidos activos en la misma mesa
+        const otrosPedidosActivos = await Pedido.count({
+          where: {
+            mesa_id: pedido.mesa_id,
+            pedido_id: { [Op.ne]: id }, // Excluir el pedido actual
+            estado_pedido_id: {
+              [Op.notIn]: [
+                estadoId, // El nuevo estado (Entregado/Cancelado)
+                // Buscar ID del otro estado final
+                (await EstadoPedido.findOne({ 
+                  where: { nombre: nuevoEstado.nombre === 'Entregado' ? 'Cancelado' : 'Entregado' },
+                  transaction 
+                }))?.estado_pedido_id
+              ].filter(Boolean)
+            }
+          },
+          transaction
+        });
+        
+        // Si no hay otros pedidos activos, liberar la mesa
+        if (otrosPedidosActivos === 0) {
+          try {
+            // Actualizar directamente en la transacción actual
+            const { Mesa } = require('../models/orm');
+            await Mesa.update(
+              { estado: 'disponible', updated_at: new Date() },
+              { where: { mesa_id: pedido.mesa_id }, transaction }
+            );
+            
+            console.log(`Mesa ${pedido.mesa_id} liberada automáticamente - pedido ${nuevoEstado.nombre.toLowerCase()}`);
+          } catch (mesaError) {
+            console.warn('Error al liberar mesa automáticamente:', mesaError);
+            // No fallar la transacción por esto
+          }
+        }
+      }
+      
       await transaction.commit();
+      
+      // Invalidar cache si hay mesa involucrada
+      if (pedido.mesa_id) {
+        try {
+          const redisClient = require('../config/redis');
+          if (redisClient) {
+            await redisClient.del('/api/mesas');
+            await redisClient.del('/api/mesas/con-pedidos');
+            console.log('Cache de mesas invalidado después de actualizar pedido');
+          }
+        } catch (cacheError) {
+          console.warn('Error al invalidar cache:', cacheError);
+        }
+      }
       
       return this.findById(id);
     } catch (error) {
@@ -206,18 +321,26 @@ class PedidoService {
         usuario_id,
         metodo_pago_id,
         direccion_id,
+        mesa_id,
         tipo_entrega = 'local',
         notas,
         productos
       } = pedidoData;
       
-      // Obtener el ID del estado "pendiente"
+      // Obtener el ID del estado "Pendiente"
       const estadoPendiente = await EstadoPedido.findOne({
-        where: { nombre: 'pendiente' },
+        where: { nombre: 'Pendiente' },
         transaction
       });
       
+      if (!estadoPendiente) {
+        throw new Error('Estado "Pendiente" no encontrado en la base de datos');
+      }
+      
       const estado_pedido_id = estadoPendiente.estado_pedido_id;
+      
+      // Generar número de pedido único
+      const numero_pedido = await generateOrderNumber(transaction);
       
       // Calcular subtotal, impuestos y total
       let subtotal = 0;
@@ -225,15 +348,60 @@ class PedidoService {
         subtotal += producto.precio_unitario * producto.cantidad;
       }
       
-      const impuestos = subtotal * 0.16; // 16% de impuestos
+      const impuestos = subtotal * 0.19; // 19% de impuestos
       const total = subtotal + impuestos;
       
-      // Insertar registro de pedido (sin carrito_id para pedidos directos)
+      // Si hay mesa_id, verificar disponibilidad real basada en pedidos activos
+      if (mesa_id) {
+        const MesaService = require('./mesa.service');
+        const mesa = await MesaService.findById(mesa_id);
+        
+        if (!mesa) {
+          throw new Error(`Mesa con ID ${mesa_id} no encontrada`);
+        }
+        
+        // Verificar si la mesa tiene pedidos activos (lógica consistente con frontend)
+        const pedidosActivos = await Pedido.count({
+          where: {
+            mesa_id: mesa_id,
+            estado_pedido_id: {
+              [Op.notIn]: await EstadoPedido.findAll({
+                where: { nombre: { [Op.in]: ['Entregado', 'Cancelado'] } },
+                attributes: ['estado_pedido_id'],
+                transaction
+              }).then(estados => estados.map(e => e.estado_pedido_id))
+            }
+          },
+          transaction
+        });
+        
+        // La mesa está realmente ocupada solo si tiene pedidos activos
+        const mesaRealmenteOcupada = pedidosActivos > 0;
+        
+        if (mesaRealmenteOcupada) {
+          throw new Error(`La mesa ${mesa.numero} está ocupada con pedidos activos`);
+        }
+        
+        // Si la mesa no tiene pedidos activos pero está marcada como ocupada, 
+        // actualizarla a disponible primero y luego marcarla como ocupada
+        if (mesa.estado === 'ocupada' && !mesaRealmenteOcupada) {
+          console.log(`Mesa ${mesa.numero} estaba marcada como ocupada sin pedidos activos - sincronizando estado`);
+          await MesaService.updateStatus(mesa_id, 'disponible');
+        }
+        
+        // Marcar la mesa como ocupada para el nuevo pedido
+        await MesaService.updateStatus(mesa_id, 'ocupada');
+        console.log(`Mesa ${mesa.numero} marcada como ocupada para pedido directo`);
+      }
+      
+      // Insertar registro de pedido (incluir mesa_id si está presente)
       const pedido = await Pedido.create({
+        numero_pedido,
         usuario_id,
         estado_pedido_id,
         metodo_pago_id,
         direccion_id,
+        mesa_id,
         carrito_id: null, // Pedidos directos no tienen carrito
         subtotal,
         impuestos,
@@ -259,14 +427,32 @@ class PedidoService {
       }
       
       // Registrar primer estado en historial
+      const comentarioHistorial = mesa_id 
+        ? `Pedido directo creado desde POS - Mesa asignada`
+        : 'Pedido directo creado desde POS';
+        
       await HistorialEstadoPedido.create({
         pedido_id: pedido.pedido_id,
         estado_pedido_id,
         fecha_cambio: new Date(),
-        comentario: 'Pedido directo creado desde POS'
+        comentario: comentarioHistorial
       }, { transaction });
       
       await transaction.commit();
+      
+      // Invalidar cache de mesas después de crear pedido
+      if (mesa_id) {
+        try {
+          const redisClient = require('../config/redis');
+          if (redisClient) {
+            await redisClient.del('/api/mesas');
+            await redisClient.del('/api/mesas/con-pedidos');
+            console.log('Cache de mesas invalidado después de crear pedido');
+          }
+        } catch (cacheError) {
+          console.warn('Error al invalidar cache:', cacheError);
+        }
+      }
       
       // Retornar el pedido completo
       return this.findById(pedido.pedido_id);

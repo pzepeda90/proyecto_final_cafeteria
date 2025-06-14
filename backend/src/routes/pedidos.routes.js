@@ -290,7 +290,7 @@ router.get('/:id/historial', verificarToken, pedidosController.obtenerHistorialE
  *                 type: integer
  *               tipo_entrega:
  *                 type: string
- *                 enum: [local, domicilio, takeaway]
+ *                 enum: [local, domicilio, takeaway, dine_in]
  *               notas:
  *                 type: string
  *               productos:
@@ -350,7 +350,7 @@ router.post('/directo', verificarToken, pedidosController.crearPedidoDirecto);
  *                 type: integer
  *               tipo_entrega:
  *                 type: string
- *                 enum: [local, domicilio, takeaway]
+ *                 enum: [local, domicilio, takeaway, dine_in]
  *               notas:
  *                 type: string
  *             required:

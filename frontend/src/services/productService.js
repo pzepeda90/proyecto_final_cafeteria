@@ -1,40 +1,94 @@
-import { API_BASE_URL } from '../constants/apiEndpoints';
+import axios from 'axios';
 
-export const getProducts = async () => {
-  try {
-    const response = await fetch(`${API_BASE_URL}/products`);
-    if (!response.ok) {
-      throw new Error('Error al obtener los productos');
+// Configuración directa como ordersService que funciona
+const productsAPI = axios.create({
+  baseURL: `${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api`,
+  headers: {
+    'Content-Type': 'application/json',
+  },
+});
+
+// Interceptor para agregar token de autenticación
+productsAPI.interceptors.request.use(
+  (config) => {
+    const token = localStorage.getItem('token');
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
     }
-    return await response.json();
-  } catch (error) {
-    console.error('Error en getProducts:', error);
-    throw error;
+    return config;
+  },
+  (error) => {
+    return Promise.reject(error);
+  }
+);
+
+// Interceptor para manejar respuestas
+productsAPI.interceptors.response.use(
+  (response) => {
+    return response;
+  },
+  (error) => {
+    // Si el token ha expirado o no es válido, redirigir al login
+    if (error.response?.status === 401) {
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+    }
+    
+    return Promise.reject(error);
+  }
+);
+
+const productService = {
+  // Obtener todos los productos
+  async getProducts() {
+    try {
+      const response = await productsAPI.get('/productos');
+      return response.data;
+    } catch (error) {
+      console.error('Error al obtener los productos:', error);
+      throw error;
+    }
+  },
+
+  // Obtener producto por ID
+  async getProductById(id) {
+    try {
+      const response = await productsAPI.get(`/productos/${id}`);
+      return response.data;
+    } catch (error) {
+      console.error('Error al obtener el producto:', error);
+      throw error;
+    }
+  },
+
+  // Alias para compatibilidad
+  async obtenerProducto(id) {
+    return this.getProductById(id);
+  },
+
+  // Obtener productos por categoría
+  async getProductsByCategory(categoryId) {
+    try {
+      const response = await productsAPI.get(`/productos?categoria=${categoryId}`);
+      return response.data;
+    } catch (error) {
+      console.error('Error al obtener los productos por categoría:', error);
+      throw error;
+    }
+  },
+
+  // Buscar productos
+  async searchProducts(query) {
+    try {
+      const response = await productsAPI.get(`/productos?search=${encodeURIComponent(query)}`);
+      return response.data;
+    } catch (error) {
+      console.error('Error al buscar productos:', error);
+      throw error;
+    }
   }
 };
 
-export const getProductById = async (id) => {
-  try {
-    const response = await fetch(`${API_BASE_URL}/products/${id}`);
-    if (!response.ok) {
-      throw new Error('Error al obtener el producto');
-    }
-    return await response.json();
-  } catch (error) {
-    console.error('Error en getProductById:', error);
-    throw error;
-  }
-};
-
-export const getProductsByCategory = async (category) => {
-  try {
-    const response = await fetch(`${API_BASE_URL}/products/category/${category}`);
-    if (!response.ok) {
-      throw new Error('Error al obtener los productos por categoría');
-    }
-    return await response.json();
-  } catch (error) {
-    console.error('Error en getProductsByCategory:', error);
-    throw error;
-  }
-}; 
+// Exportar tanto el objeto como funciones individuales para compatibilidad
+export const { getProducts, getProductById, getProductsByCategory, searchProducts } = productService;
+export default productService; 

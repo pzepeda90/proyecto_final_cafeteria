@@ -7,6 +7,7 @@ const sizes = {
   md: 'max-w-lg',
   lg: 'max-w-2xl',
   xl: 'max-w-4xl',
+  '2xl': 'max-w-6xl',
   full: 'max-w-full',
 };
 
@@ -40,11 +41,11 @@ const Modal = ({
         className="fixed inset-0 z-10 overflow-y-auto"
         onClick={handleBackdropClick}
       >
-        <div className="flex min-h-full items-end justify-center p-4 text-center sm:items-center sm:p-0">
+        <div className="flex min-h-full items-end justify-center p-4 text-center sm:items-center sm:p-6 lg:p-8">
           <div
             className={`
               relative transform overflow-hidden rounded-lg bg-white text-left shadow-xl transition-all
-              sm:my-8 w-full ${sizes[size]} sm:max-w-full
+              sm:my-8 w-full ${sizes[size]} mx-4 sm:mx-6 lg:mx-8
             `.trim()}
           >
             {/* Header */}

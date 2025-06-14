@@ -63,43 +63,32 @@ const createRateLimit = (windowMs, max, message, skipSuccessfulRequests = false)
   });
 };
 
-// Rate limits específicos
+// Rate limits específicos (configuración menos restrictiva para desarrollo)
 const rateLimits = {
-  // Rate limit general (100 requests por 15 minutos por IP)
-  general: createRateLimit(
-    15 * 60 * 1000, // 15 minutos
-    100,
-    'Demasiadas peticiones desde esta IP'
-  ),
+  // Rate limit general más permisivo
+  general: process.env.NODE_ENV === 'development' 
+    ? createRateLimit(15 * 60 * 1000, 1000, 'Demasiadas peticiones desde esta IP')
+    : createRateLimit(15 * 60 * 1000, 100, 'Demasiadas peticiones desde esta IP'),
   
-  // Rate limit para login (5 intentos por 15 minutos)
-  auth: createRateLimit(
-    15 * 60 * 1000,
-    5,
-    'Demasiados intentos de login, intenta más tarde',
-    true
-  ),
+  // Rate limit para login más permisivo en desarrollo
+  auth: process.env.NODE_ENV === 'development'
+    ? createRateLimit(5 * 60 * 1000, 100, 'Demasiados intentos de login, intenta más tarde', true)
+    : createRateLimit(15 * 60 * 1000, 5, 'Demasiados intentos de login, intenta más tarde', true),
   
-  // Rate limit para API de productos (300 requests por 15 minutos)
-  products: createRateLimit(
-    15 * 60 * 1000,
-    300,
-    'Límite de consultas de productos excedido'
-  ),
+  // Rate limit para API de productos muy permisivo
+  products: process.env.NODE_ENV === 'development'
+    ? createRateLimit(15 * 60 * 1000, 10000, 'Límite de consultas de productos excedido')
+    : createRateLimit(15 * 60 * 1000, 300, 'Límite de consultas de productos excedido'),
   
-  // Rate limit para crear pedidos (10 por 5 minutos)
-  orders: createRateLimit(
-    5 * 60 * 1000,
-    10,
-    'Límite de creación de pedidos excedido'
-  ),
+  // Rate limit para crear pedidos más permisivo
+  orders: process.env.NODE_ENV === 'development'
+    ? createRateLimit(5 * 60 * 1000, 1000, 'Límite de creación de pedidos excedido')
+    : createRateLimit(5 * 60 * 1000, 10, 'Límite de creación de pedidos excedido'),
   
-  // Rate limit para uploads (20 por 10 minutos)
-  uploads: createRateLimit(
-    10 * 60 * 1000,
-    20,
-    'Límite de subida de archivos excedido'
-  ),
+  // Rate limit para uploads más permisivo
+  uploads: process.env.NODE_ENV === 'development'
+    ? createRateLimit(10 * 60 * 1000, 1000, 'Límite de subida de archivos excedido')
+    : createRateLimit(10 * 60 * 1000, 20, 'Límite de subida de archivos excedido'),
 };
 
 // Cache en memoria con TTL configurable
@@ -279,7 +268,21 @@ const payloadLimitMiddleware = (limit = '10mb') => {
   return (req, res, next) => {
     const contentLength = parseInt(req.get('content-length'));
     
-    if (contentLength > parseInt(limit)) {
+    // Convertir el límite a bytes
+    let limitInBytes;
+    if (typeof limit === 'string') {
+      if (limit.endsWith('mb')) {
+        limitInBytes = parseInt(limit) * 1024 * 1024;
+      } else if (limit.endsWith('kb')) {
+        limitInBytes = parseInt(limit) * 1024;
+      } else {
+        limitInBytes = parseInt(limit);
+      }
+    } else {
+      limitInBytes = limit;
+    }
+    
+    if (contentLength && contentLength > limitInBytes) {
       return res.status(413).json({
         error: 'Payload demasiado grande',
         maxSize: limit,

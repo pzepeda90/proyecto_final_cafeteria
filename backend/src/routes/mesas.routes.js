@@ -69,6 +69,25 @@ router.get('/disponibles', mesasController.getAvailable);
 
 /**
  * @swagger
+ * /api/mesas/con-pedidos:
+ *   get:
+ *     summary: Obtener mesas con pedidos activos
+ *     tags:
+ *       - Mesas
+ *     responses:
+ *       200:
+ *         description: Lista de mesas con información de pedidos activos
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/Mesa'
+ */
+router.get('/con-pedidos', mesasController.getAllWithOrders);
+
+/**
+ * @swagger
  * /api/mesas/{id}:
  *   get:
  *     summary: Obtener mesa por ID

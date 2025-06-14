@@ -1,5 +1,5 @@
 const bcrypt = require('bcryptjs');
-const { Usuario, Rol } = require('../models/orm');
+const { Usuario } = require('../models/orm');
 
 class UsuarioService {
   /**
@@ -10,23 +10,15 @@ class UsuarioService {
   static async findById(id) {
     try {
       const usuario = await Usuario.findOne({
-        where: { usuario_id: id, activo: true },
-        include: [{
-          model: Rol,
-          through: { attributes: [] }, // Excluir atributos de la tabla intermedia
-          attributes: ['rol_id', 'nombre']
-        }]
+        where: { usuario_id: id, activo: true }
       });
       
       if (!usuario) return null;
       
       const usuarioData = usuario.toJSON();
       
-      // Obtener el primer rol (o rol principal)
-      if (usuarioData.Rols && usuarioData.Rols.length > 0) {
-        usuarioData.rol_nombre = usuarioData.Rols[0].nombre.toLowerCase();
-        usuarioData.rol_id = usuarioData.Rols[0].rol_id;
-      }
+      // El rol ya está incluido directamente en el usuario
+      usuarioData.rol_nombre = usuarioData.rol;
       
       return usuarioData;
     } catch (error) {
@@ -43,23 +35,15 @@ class UsuarioService {
   static async findByEmail(email) {
     try {
       const usuario = await Usuario.findOne({
-        where: { email, activo: true },
-        include: [{
-          model: Rol,
-          through: { attributes: [] }, // Excluir atributos de la tabla intermedia
-          attributes: ['rol_id', 'nombre']
-        }]
+        where: { email, activo: true }
       });
       
       if (!usuario) return null;
       
       const usuarioData = usuario.toJSON();
       
-      // Obtener el primer rol (o rol principal)
-      if (usuarioData.Rols && usuarioData.Rols.length > 0) {
-        usuarioData.rol_nombre = usuarioData.Rols[0].nombre.toLowerCase();
-        usuarioData.rol_id = usuarioData.Rols[0].rol_id;
-      }
+      // El rol ya está incluido directamente en el usuario
+      usuarioData.rol_nombre = usuarioData.rol;
       
       return usuarioData;
     } catch (error) {
@@ -74,30 +58,28 @@ class UsuarioService {
    * @returns {Promise<Object>} - Usuario creado
    */
   static async create(userData) {
-    const { nombre, apellido, email, password, telefono, fecha_nacimiento, rol_id = 3 } = userData; // rol_id 3 = CLIENTE por defecto
+    const { nombre, apellido, email, password, telefono, username, rol = 'cliente' } = userData;
     
     try {
       // Encriptar contraseña
       const salt = await bcrypt.genSalt(10);
       const password_hash = await bcrypt.hash(password, salt);
       
+      // Generar username si no se proporciona
+      const finalUsername = username || email.split('@')[0];
+      
       const nuevoUsuario = await Usuario.create({
+        username: finalUsername,
         nombre,
         apellido,
         email,
         password_hash,
         telefono,
-        fecha_nacimiento,
+        rol,
         activo: true
       });
       
-      // Asignar rol al usuario
-      const rol = await Rol.findByPk(rol_id);
-      if (rol) {
-        await nuevoUsuario.addRol(rol);
-      }
-      
-      // Obtener el usuario completo con rol
+      // Obtener el usuario completo
       return this.findById(nuevoUsuario.usuario_id);
     } catch (error) {
       console.error('Error al crear usuario:', error);
@@ -112,7 +94,7 @@ class UsuarioService {
    * @returns {Promise<Object>} - Usuario actualizado
    */
   static async update(id, userData) {
-    const { nombre, apellido, email, telefono, fecha_nacimiento } = userData;
+    const { nombre, apellido, email, telefono, username, direccion } = userData;
     
     try {
       const usuario = await Usuario.findByPk(id);
@@ -121,11 +103,12 @@ class UsuarioService {
         throw new Error('Usuario no encontrado');
       }
       
-      usuario.nombre = nombre;
-      usuario.apellido = apellido;
-      usuario.email = email;
-      usuario.telefono = telefono;
-      usuario.fecha_nacimiento = fecha_nacimiento;
+      if (nombre) usuario.nombre = nombre;
+      if (apellido) usuario.apellido = apellido;
+      if (email) usuario.email = email;
+      if (telefono) usuario.telefono = telefono;
+      if (username) usuario.username = username;
+      if (direccion) usuario.direccion = direccion;
       
       await usuario.save();
       

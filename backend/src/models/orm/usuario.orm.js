@@ -7,24 +7,17 @@ const Usuario = sequelize.define('Usuario', {
     primaryKey: true, 
     autoIncrement: true 
   },
-  nombre: { 
-    type: DataTypes.STRING, 
+  username: {
+    type: DataTypes.STRING(50),
     allowNull: false,
+    unique: true,
     validate: {
       notEmpty: true,
-      len: [2, 50]
-    }
-  },
-  apellido: { 
-    type: DataTypes.STRING, 
-    allowNull: false,
-    validate: {
-      notEmpty: true,
-      len: [2, 50]
+      len: [3, 50]
     }
   },
   email: { 
-    type: DataTypes.STRING, 
+    type: DataTypes.STRING(100), 
     allowNull: false, 
     unique: true,
     validate: {
@@ -32,29 +25,56 @@ const Usuario = sequelize.define('Usuario', {
     }
   },
   password_hash: { 
-    type: DataTypes.STRING, 
+    type: DataTypes.STRING(255), 
     allowNull: false 
   },
+  nombre: { 
+    type: DataTypes.STRING(100), 
+    allowNull: false,
+    validate: {
+      notEmpty: true,
+      len: [2, 100]
+    }
+  },
+  apellido: { 
+    type: DataTypes.STRING(100), 
+    allowNull: false,
+    validate: {
+      notEmpty: true,
+      len: [2, 100]
+    }
+  },
   telefono: { 
-    type: DataTypes.STRING,
-    validate: {
-      is: /^[+]?[(]?[0-9]{1,4}[)]?[-\s.]?[0-9]{1,4}[-\s.]?[0-9]{1,9}$/
-    }
+    type: DataTypes.STRING(20),
+    allowNull: true
   },
-  fecha_nacimiento: { 
-    type: DataTypes.DATE,
-    validate: {
-      isDate: true,
-      isBefore: new Date().toISOString().split('T')[0]
-    }
+  direccion: {
+    type: DataTypes.TEXT,
+    allowNull: true
   },
-  fecha_registro: { 
-    type: DataTypes.DATE, 
-    defaultValue: DataTypes.NOW 
+  rol: {
+    type: DataTypes.STRING(20),
+    allowNull: false,
+    defaultValue: 'cliente',
+    validate: {
+      isIn: [['admin', 'vendedor', 'cliente']]
+    }
   },
   activo: { 
     type: DataTypes.BOOLEAN, 
     defaultValue: true 
+  },
+  fecha_registro: {
+    type: DataTypes.DATE,
+    defaultValue: DataTypes.NOW
+  },
+  created_at: {
+    type: DataTypes.DATE,
+    defaultValue: DataTypes.NOW
+  },
+  updated_at: {
+    type: DataTypes.DATE,
+    defaultValue: DataTypes.NOW
   }
 }, {
   tableName: 'usuarios',
@@ -63,6 +83,13 @@ const Usuario = sequelize.define('Usuario', {
     {
       unique: true,
       fields: ['email']
+    },
+    {
+      unique: true,
+      fields: ['username']
+    },
+    {
+      fields: ['rol']
     }
   ]
 });

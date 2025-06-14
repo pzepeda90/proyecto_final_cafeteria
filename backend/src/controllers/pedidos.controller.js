@@ -11,7 +11,7 @@ const obtenerPedidos = async (req, res) => {
     let options = {};
     
     // Si es cliente, solo ver sus pedidos
-    if (!usuario || !usuario.Roles || !usuario.Roles.some(rol => rol.nombre === 'admin')) {
+    if (!usuario || usuario.rol !== 'admin') {
       options.usuario_id = req.usuario.id;
     }
     
@@ -47,7 +47,7 @@ const obtenerPedidoPorId = async (req, res) => {
     // Verificar permisos (solo admin o el dueño del pedido)
     const usuario = await UsuarioService.findById(req.usuario.id);
     
-    if (!usuario || !usuario.Roles || (!usuario.Roles.some(rol => rol.nombre === 'admin') && pedido.usuario_id !== req.usuario.id)) {
+    if (!usuario || (usuario.rol !== 'admin' && pedido.usuario_id !== req.usuario.id)) {
       return res.status(403).json({ mensaje: 'No tienes permiso para ver este pedido' });
     }
     
@@ -132,7 +132,8 @@ const crearPedidoDirecto = async (req, res, next) => {
     const schema = Joi.object({
       metodo_pago_id: Joi.number().integer().required(),
       direccion_id: Joi.number().integer().allow(null).optional(),
-      tipo_entrega: Joi.string().valid('local', 'domicilio', 'takeaway').default('local'),
+      mesa_id: Joi.number().integer().allow(null).optional(),
+      tipo_entrega: Joi.string().valid('local', 'domicilio', 'takeaway', 'dine_in').default('local'),
       notas: Joi.string().allow('', null).optional(),
       productos: Joi.array().items(
         Joi.object({
@@ -146,7 +147,7 @@ const crearPedidoDirecto = async (req, res, next) => {
     const { error } = schema.validate(req.body);
     if (error) return next({ status: 400, message: error.details[0].message, code: 'VALIDACION' });
     
-    const { metodo_pago_id, direccion_id, tipo_entrega, notas, productos } = req.body;
+    const { metodo_pago_id, direccion_id, mesa_id, tipo_entrega, notas, productos } = req.body;
     
     // Validar que los productos existan y tengan stock suficiente
     for (const producto of productos) {
@@ -166,6 +167,7 @@ const crearPedidoDirecto = async (req, res, next) => {
       usuario_id: req.usuario.id,
       metodo_pago_id,
       direccion_id,
+      mesa_id,
       tipo_entrega,
       notas,
       productos
@@ -203,7 +205,7 @@ const actualizarEstadoPedido = async (req, res, next) => {
     // Solo administradores pueden cambiar el estado
     const usuario = await UsuarioService.findById(req.usuario.id);
     
-    if (!usuario || !usuario.Roles || !usuario.Roles.some(rol => rol.nombre === 'admin')) {
+    if (!usuario || usuario.rol !== 'admin') {
       return res.status(403).json({ mensaje: 'No tienes permiso para actualizar este pedido' });
     }
     
@@ -274,7 +276,7 @@ const cancelarPedido = async (req, res) => {
     
     // Verificar permisos (solo admin o el dueño del pedido)
     const usuario = await UsuarioService.findById(req.usuario.id);
-    const esAdmin = usuario && usuario.Roles && usuario.Roles.some(rol => rol.nombre === 'admin');
+    const esAdmin = usuario && usuario.rol === 'admin';
     
     if (!esAdmin && pedido.usuario_id !== req.usuario.id) {
       return res.status(403).json({ mensaje: 'No tienes permiso para cancelar este pedido' });
@@ -373,7 +375,7 @@ const obtenerHistorialEstados = async (req, res) => {
     // Verificar permisos (solo admin o el dueño del pedido)
     const usuario = await UsuarioService.findById(req.usuario.id);
     
-    if (!usuario || !usuario.Roles || (!usuario.Roles.some(rol => rol.nombre === 'admin') && pedido.usuario_id !== req.usuario.id)) {
+    if (!usuario || (usuario.rol !== 'admin' && pedido.usuario_id !== req.usuario.id)) {
       return res.status(403).json({ mensaje: 'No tienes permiso para ver este pedido' });
     }
     

@@ -72,7 +72,8 @@ const verificarToken = async (req, res, next) => {
     
     // Preparar datos del usuario
     const userData = {
-      id: usuario.usuario_id,
+      usuario_id: usuario.usuario_id,  // Cambiar id por usuario_id para consistencia
+      id: usuario.usuario_id,          // Mantener id para compatibilidad
       email: usuario.email,
       nombre: usuario.nombre,
       apellido: usuario.apellido,

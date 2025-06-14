@@ -4,14 +4,26 @@ const bcrypt = require('bcryptjs');
 class VendedorService {
   /**
    * Obtiene todos los vendedores
-   * @returns {Promise<Array>} - Lista de vendedores
+   * @param {Object} filtros - Filtros opcionales
+   * @returns {Promise<Object>} - Lista de vendedores con metadatos
    */
-  static async findAll() {
+  static async findAll(filtros = {}) {
     try {
+      const where = {};
+      
+      if (filtros.activo !== undefined) {
+        where.activo = filtros.activo;
+      }
+      
       const vendedores = await Vendedor.findAll({
+        where,
         order: [['nombre', 'ASC']]
       });
-      return vendedores.map(vendedor => vendedor.toJSON());
+      
+      return {
+        data: vendedores.map(vendedor => vendedor.toJSON()),
+        total: vendedores.length
+      };
     } catch (error) {
       console.error('Error al obtener vendedores:', error);
       throw error;
@@ -51,6 +63,23 @@ class VendedorService {
   }
 
   /**
+   * Obtiene un vendedor por su usuario_id
+   * @param {number} usuario_id - ID del usuario
+   * @returns {Promise<Object>} - Vendedor encontrado
+   */
+  static async findByUserId(usuario_id) {
+    try {
+      const vendedor = await Vendedor.findOne({
+        where: { usuario_id }
+      });
+      return vendedor ? vendedor.toJSON() : null;
+    } catch (error) {
+      console.error('Error al buscar vendedor por usuario_id:', error);
+      throw error;
+    }
+  }
+
+  /**
    * Crea un nuevo vendedor
    * @param {Object} data - Datos del vendedor
    * @returns {Promise<Object>} - Vendedor creado
@@ -59,7 +88,7 @@ class VendedorService {
     try {
       console.log('VendedorService.create - Datos recibidos:', data);
       
-      const { nombre, apellido, email, password, telefono } = data;
+      const { usuario_id, nombre, apellido, email, password, telefono } = data;
       
       console.log('VendedorService.create - Encriptando contraseña...');
       
@@ -69,6 +98,7 @@ class VendedorService {
       
       console.log('VendedorService.create - Contraseña encriptada, creando en BD...');
       console.log('VendedorService.create - Datos a insertar:', {
+        usuario_id,
         nombre,
         apellido,
         email,
@@ -78,6 +108,7 @@ class VendedorService {
       });
       
       const vendedor = await Vendedor.create({
+        usuario_id,
         nombre,
         apellido,
         email,

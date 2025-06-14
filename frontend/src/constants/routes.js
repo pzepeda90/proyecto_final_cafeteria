@@ -6,6 +6,7 @@ export const PUBLIC_ROUTES = {
   REGISTER: '/register',
   HOME: '/',
   PRODUCTS: '/products',
+  PRODUCT_REVIEWS: '/products/:id/resenas',
   ABOUT: '/about',
   CONTACT: '/contact',
 };
@@ -42,6 +43,11 @@ export const PRIVATE_ROUTES = {
     MY_ADDRESSES: '/addresses',
     MY_REVIEWS: '/reviews',
   },
+};
+
+// Funciones helper para generar rutas dinámicas
+export const ROUTE_GENERATORS = {
+  PRODUCT_REVIEWS: (id) => `/products/${id}/resenas`,
 };
 
 // Rutas por defecto según rol

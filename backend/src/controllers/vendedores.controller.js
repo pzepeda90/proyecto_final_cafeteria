@@ -1,4 +1,4 @@
-const { VendedorService } = require('../services');
+const { VendedorService, UsuarioService } = require('../services');
 const jwt = require('jsonwebtoken');
 
 const vendedoresController = {
@@ -36,21 +36,21 @@ const vendedoresController = {
     try {
       const { email, password } = req.body;
       
-      // Verificar email
+      // Buscar vendedor por email
       const vendedor = await VendedorService.findByEmail(email);
       if (!vendedor) {
         return res.status(401).json({ mensaje: 'Credenciales inválidas' });
       }
       
       // Verificar contraseña
-      const passwordValida = await VendedorService.comparePassword(password, vendedor.password_hash);
-      if (!passwordValida) {
+      const isMatch = await VendedorService.comparePassword(password, vendedor.password_hash);
+      if (!isMatch) {
         return res.status(401).json({ mensaje: 'Credenciales inválidas' });
       }
       
       // Verificar si está activo
       if (!vendedor.activo) {
-        return res.status(401).json({ mensaje: 'Cuenta de vendedor inactiva. Contacte al administrador.' });
+        return res.status(401).json({ mensaje: 'Vendedor inactivo' });
       }
       
       // Generar token
@@ -95,21 +95,41 @@ const vendedoresController = {
       
       console.log('Validación básica pasada, verificando email existente...');
       
-      // Verificar si el email ya existe
-      const vendedorExistente = await VendedorService.findByEmail(email);
-      if (vendedorExistente) {
-        console.log('Error: Email ya registrado');
+      // Verificar si el email ya existe en usuarios
+      const usuarioExistente = await UsuarioService.findByEmail(email);
+      if (usuarioExistente) {
+        console.log('Error: Email ya registrado en usuarios');
         return res.status(400).json({ mensaje: 'El email ya está registrado' });
       }
       
-      console.log('Email disponible, creando vendedor...');
+      // Verificar si el email ya existe en vendedores
+      const vendedorExistente = await VendedorService.findByEmail(email);
+      if (vendedorExistente) {
+        console.log('Error: Email ya registrado en vendedores');
+        return res.status(400).json({ mensaje: 'El email ya está registrado' });
+      }
       
-      // Crear vendedor
-      const vendedor = await VendedorService.create({
+      console.log('Email disponible, creando usuario con rol vendedor...');
+      
+      // Paso 1: Crear usuario con rol 'vendedor' en la tabla usuarios
+      const usuario = await UsuarioService.create({
         nombre,
         apellido,
         email,
         password,
+        telefono,
+        rol: 'vendedor'  // Especificar que es vendedor
+      });
+      
+      console.log('Usuario creado:', usuario);
+      
+      // Paso 2: Crear registro en tabla vendedores con el usuario_id
+      const vendedor = await VendedorService.create({
+        usuario_id: usuario.usuario_id,  // Usar el ID del usuario recién creado
+        nombre,
+        apellido,
+        email,
+        password,  // VendedorService se encarga de encriptar
         telefono
       });
       
@@ -119,6 +139,7 @@ const vendedoresController = {
         mensaje: 'Vendedor creado exitosamente',
         vendedor: {
           vendedor_id: vendedor.vendedor_id,
+          usuario_id: vendedor.usuario_id,
           nombre: vendedor.nombre,
           apellido: vendedor.apellido,
           email: vendedor.email,

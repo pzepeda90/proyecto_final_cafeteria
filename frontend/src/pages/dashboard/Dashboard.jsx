@@ -6,6 +6,7 @@ import {
 } from 'recharts';
 import Modal from '../../components/ui/Modal';
 import DashboardService from '../../services/dashboardService';
+import { formatCurrency } from '../../utils/formatters';
 
 const Dashboard = () => {
   const { user } = useSelector((state) => state.auth);
@@ -167,7 +168,7 @@ const Dashboard = () => {
     
     switch (format) {
       case 'currency':
-        return `$${value.toLocaleString('es-CL')}`;
+        return formatCurrency(value);
       case 'percentage':
         return `${value.toFixed(1)}%`;
       case 'decimal':
@@ -250,7 +251,7 @@ const Dashboard = () => {
             <XAxis dataKey="empleado" tick={{ fontSize: 11 }} />
             <YAxis tick={{ fontSize: 11 }} />
             <Tooltip formatter={(value, name) => [
-              name === 'ventas' ? `$${value.toLocaleString('es-CL')}` : value,
+              name === 'ventas' ? formatCurrency(value) : value,
               name === 'clientes' ? 'Clientes Atendidos' : 'Ventas'
             ]} />
             <Legend wrapperStyle={legendStyle} iconSize={10} />
@@ -360,7 +361,7 @@ const Dashboard = () => {
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="dia" hide />
               <YAxis />
-              <Tooltip formatter={(value) => `$${value.toLocaleString('es-CL')}`} />
+              <Tooltip formatter={(value) => formatCurrency(value)} />
               <Line type="monotone" dataKey="ventas" stroke="#0088FE" name="Ventas" dot={false} />
             </LineChart>
           </ResponsiveContainer>
@@ -374,7 +375,7 @@ const Dashboard = () => {
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="mes" />
               <YAxis />
-              <Tooltip formatter={(value) => `$${value.toLocaleString('es-CL')}`} />
+              <Tooltip formatter={(value) => formatCurrency(value)} />
               <Bar dataKey="ventas" fill="#0088FE" radius={[6, 6, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>

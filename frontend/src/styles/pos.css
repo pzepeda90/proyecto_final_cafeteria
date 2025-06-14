@@ -1,0 +1,359 @@
+/* Estilos personalizados para el POS */
+
+/* Animaciones suaves para los productos */
+.product-card {
+  transition: all 0.2s ease-in-out;
+}
+
+.product-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+}
+
+/* Mejoras para los botones de cantidad */
+.quantity-button {
+  user-select: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+}
+
+.quantity-button:active {
+  transform: scale(0.95);
+}
+
+/* Estilos para los cuadros de mesa */
+.mesa-card {
+  min-height: 80px;
+  max-height: 80px;
+  aspect-ratio: 1;
+}
+
+.mesa-card-compact {
+  min-height: 64px;
+  max-height: 64px;
+  aspect-ratio: 1;
+}
+
+/* Efectos de pulso para notificaciones */
+@keyframes pulse-success {
+  0% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.7); }
+  70% { box-shadow: 0 0 0 10px rgba(34, 197, 94, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0); }
+}
+
+.pulse-success {
+  animation: pulse-success 0.6s ease-out;
+}
+
+/* Gradientes personalizados */
+.bg-gradient-primary {
+  background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+}
+
+.bg-gradient-success {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+}
+
+/* Efectos de hover mejorados */
+.hover-lift {
+  transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+}
+
+.hover-lift:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+/* Scrollbar personalizado para el carrito */
+.cart-scroll::-webkit-scrollbar {
+  width: 6px;
+}
+
+.cart-scroll::-webkit-scrollbar-track {
+  background: #f1f5f9;
+  border-radius: 3px;
+}
+
+.cart-scroll::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 3px;
+}
+
+.cart-scroll::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* Estados de carga */
+.loading-shimmer {
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+/* Animación para el carrito desplegable */
+.cart-collapse-enter {
+  opacity: 0;
+  transform: translateY(-10px);
+}
+
+.cart-collapse-enter-active {
+  opacity: 1;
+  transform: translateY(0);
+  transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+.cart-collapse-exit {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.cart-collapse-exit-active {
+  opacity: 0;
+  transform: translateY(-10px);
+  transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+/* Mejoras para texto más pequeño en las mesas */
+.mesa-text-small {
+  font-size: 9px;
+  line-height: 1.2;
+}
+
+/* Mejora para el carrito con más altura - solo cuando está expandido */
+.cart-container-expanded {
+  /* Altura fija para mostrar aproximadamente 4-5 elementos */
+  min-height: 350px;
+  max-height: 400px;
+}
+
+.cart-container-collapsed {
+  min-height: auto;
+  max-height: 120px;
+}
+
+/* Mejoras para dispositivos móviles */
+@media (max-width: 768px) {
+  .mesa-card {
+    min-height: 70px;
+    max-height: 70px;
+  }
+  
+  .mesa-card-compact {
+    min-height: 56px;
+    max-height: 56px;
+  }
+  
+  /* Fuente aún más pequeña en móviles */
+  .mesa-text-small {
+    font-size: 8px;
+  }
+  
+  /* Carrito más compacto en móviles */
+  .cart-container-expanded {
+    min-height: 300px;
+    max-height: 350px;
+  }
+  
+  .cart-container-collapsed {
+    min-height: auto;
+    max-height: 100px;
+  }
+}
+
+/* Estilos para el menú contextual de mesas */
+.mesa-menu-contextual {
+  /* Asegurar que el menú aparezca sobre otros elementos */
+  z-index: 50;
+  /* Posicionar correctamente */
+  position: absolute;
+  /* Prevenir que se corte */
+  overflow: visible;
+  /* Animación suave */
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Mejoras para la interacción con las mesas - más precisión en hover */
+.mesa-container {
+  /* Permitir que el menú contextual se desborde */
+  overflow: visible;
+  /* Asegurar que el área clickeable esté disponible */
+  position: relative;
+  /* Añadir un pequeño padding para separar las áreas de hover */
+  margin: 2px;
+}
+
+/* Grupo específico para hover de mesa - evitar interferencias */
+.mesa-hover-group {
+  /* Transition con delay para evitar activaciones accidentales */
+  transition: all 0.2s ease-in-out;
+  transition-delay: 0.1s;
+}
+
+.mesa-hover-group:hover {
+  /* Activar inmediatamente al hacer hover directo */
+  transition-delay: 0s;
+}
+
+/* Mejorar la precisión del área de hover */
+.mesa-button-area {
+  /* Área de hover específica y bien delimitada */
+  position: relative;
+  z-index: 1;
+  /* Prevenir que elementos cercanos interfieran */
+  isolation: isolate;
+}
+
+/* Contenedor del menú con mejor aislamiento */
+.mesa-menu-overlay {
+  /* Posicionamiento absoluto dentro del botón */
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  /* Solo activar eventos cuando sea necesario */
+  pointer-events: none;
+  /* Z-index alto para estar sobre otros elementos */
+  z-index: 10;
+}
+
+.mesa-menu-overlay.active {
+  pointer-events: auto;
+}
+
+/* Separación entre mesas para evitar hover accidental */
+.mesa-grid-item {
+  /* Añadir un pequeño margen para separar las áreas de hover */
+  padding: 1px;
+}
+
+/* Efectos visuales mejorados para el menú contextual */
+.mesa-actions-button {
+  backdrop-filter: blur(8px);
+  background: rgba(255, 255, 255, 0.95);
+  border: 1px solid rgba(0, 0, 0, 0.05);
+  box-shadow: 
+    0 4px 6px -1px rgba(0, 0, 0, 0.1),
+    0 2px 4px -1px rgba(0, 0, 0, 0.06),
+    0 0 0 1px rgba(255, 255, 255, 0.05) inset;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.mesa-actions-button:hover {
+  transform: translateY(-1px) scale(1.02);
+  box-shadow: 
+    0 10px 15px -3px rgba(0, 0, 0, 0.1),
+    0 4px 6px -2px rgba(0, 0, 0, 0.05),
+    0 0 0 1px rgba(255, 255, 255, 0.1) inset;
+}
+
+.mesa-actions-button:active {
+  transform: translateY(0) scale(0.98);
+  transition: all 0.1s ease;
+}
+
+/* Animación de aparición del menú con delay */
+@keyframes menuSlideInDelayed {
+  0% {
+    opacity: 0;
+    transform: translateY(-8px) scale(0.95);
+  }
+  20% {
+    opacity: 0;
+    transform: translateY(-8px) scale(0.95);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes menuSlideOut {
+  from {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(-8px) scale(0.95);
+  }
+}
+
+/* Aplicar animaciones con delay para evitar activaciones accidentales */
+.mesa-menu-enter {
+  animation: menuSlideInDelayed 0.4s ease-out forwards;
+}
+
+.mesa-menu-exit {
+  animation: menuSlideOut 0.15s ease-in forwards;
+}
+
+/* Mejorar la apariencia de los iconos en el menú */
+.mesa-action-icon {
+  filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.1));
+  transition: filter 0.2s ease;
+}
+
+.mesa-action-icon:hover {
+  filter: drop-shadow(0 2px 2px rgba(0, 0, 0, 0.15));
+}
+
+/* Prevenir que el menú interfiera con el click de la mesa */
+.mesa-actions-menu {
+  /* Solo permitir eventos del mouse cuando sea visible */
+  pointer-events: none;
+}
+
+.mesa-actions-menu.visible {
+  pointer-events: auto;
+}
+
+/* Estilo para el contenedor del menú con mejor posicionamiento */
+.mesa-menu-container {
+  position: absolute;
+  z-index: 50;
+  pointer-events: none;
+}
+
+.mesa-menu-container.active {
+  pointer-events: auto;
+}
+
+/* Mejoras para responsive */
+@media (max-width: 640px) {
+  .mesa-actions-button {
+    padding: 0.375rem 0.75rem;
+    font-size: 0.75rem;
+  }
+  
+  .mesa-action-icon {
+    font-size: 0.875rem;
+  }
+}
+
+/* Mejoras adicionales para el scroll del carrito */
+.cart-scroll {
+  /* Asegurar que el scroll sea suave */
+  scroll-behavior: smooth;
+  /* Mejorar el rendimiento del scroll */
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Estilo mejorado para los elementos del carrito */
+.cart-item {
+  /* Altura mínima para cada elemento del carrito */
+  min-height: 80px;
+  /* Animación suave al aparecer/desaparecer */
+  transition: all 0.3s ease-in-out;
+}
+
+.cart-item:hover {
+  /* Efecto hover sutil */
+  transform: translateX(2px);
+} 

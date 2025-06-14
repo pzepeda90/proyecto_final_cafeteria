@@ -79,6 +79,24 @@ router.post('/productos/:producto_id/resenas', verificarToken, resenasController
 
 /**
  * @swagger
+ * /api/resenas/mis-resenas:
+ *   get:
+ *     summary: Obtener las reseñas del usuario logueado
+ *     tags: [Reseñas]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Lista de reseñas del usuario
+ *       401:
+ *         description: No autorizado
+ *       500:
+ *         description: Error del servidor
+ */
+router.get('/resenas/mis-resenas', verificarToken, resenasController.getMisResenas);
+
+/**
+ * @swagger
  * /api/resenas/{id}:
  *   put:
  *     summary: Actualizar una reseña

@@ -1,11 +1,3 @@
-// Componente ProtectedRoute
-const ProtectedRoute = ({ isAllowed, redirectTo, children }) => {
-  if (!isAllowed) {
-    return <Navigate to={redirectTo} replace />;
-  }
-  return children;
-};
-
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import { PRIVATE_ROUTES, PUBLIC_ROUTES } from '../constants/routes';
@@ -21,6 +13,7 @@ import MainLayout from '../layouts/MainLayout';
 import LoginPage from '../pages/auth/LoginPage';
 import RegisterPage from '../pages/auth/RegisterPage';
 import ProductsPage from '../pages/products/ProductsPage';
+import ProductReviewsPage from '../pages/products/ProductReviewsPage';
 
 // Páginas comunes
 import Profile from '../pages/Profile';
@@ -29,6 +22,7 @@ import Settings from '../pages/Settings';
 // Páginas de cliente
 import Cart from '../pages/client/Cart';
 import Orders from '../pages/client/Orders';
+import MyReviews from '../pages/client/MyReviews';
 
 // Páginas de administrador
 import AdminDashboard from '../pages/admin/Dashboard';
@@ -36,6 +30,14 @@ import AdminOrders from '../pages/admin/orders/OrdersManagement';
 import ProductsManagement from '../pages/admin/products/ProductsManagement';
 import ProductForm from '../pages/admin/products/ProductForm';
 import UsersManagement from '../pages/admin/users/UsersManagement';
+
+// Componente ProtectedRoute
+const ProtectedRoute = ({ isAllowed, redirectTo, children }) => {
+  if (!isAllowed) {
+    return <Navigate to={redirectTo} replace />;
+  }
+  return children;
+};
 
 const AppRouter = () => {
   const { user } = useSelector(state => state.auth);
@@ -49,6 +51,7 @@ const AppRouter = () => {
         <Route path={PUBLIC_ROUTES.LOGIN} element={<LoginPage />} />
         <Route path={PUBLIC_ROUTES.REGISTER} element={<RegisterPage />} />
         <Route path={PUBLIC_ROUTES.PRODUCTS} element={<ProductsPage />} />
+        <Route path={PUBLIC_ROUTES.PRODUCT_REVIEWS} element={<ProductReviewsPage />} />
       </Route>
 
       {/* Rutas Protegidas Comunes */}
@@ -79,6 +82,7 @@ const AppRouter = () => {
       >
         <Route path={PRIVATE_ROUTES.CART} element={<Cart />} />
         <Route path={PRIVATE_ROUTES.CLIENTE.MY_ORDERS} element={<Orders />} />
+        <Route path={PRIVATE_ROUTES.CLIENTE.MY_REVIEWS} element={<MyReviews />} />
       </Route>
 
       {/* Rutas de Administrador */}

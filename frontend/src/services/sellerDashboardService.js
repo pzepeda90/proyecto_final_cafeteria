@@ -51,9 +51,9 @@ class SellerDashboardService {
       );
 
       // Calcular estadísticas
-      const ventasHoy = pedidosHoy.reduce((sum, pedido) => sum + (pedido.total || 0), 0);
-      const ventasSemana = pedidosSemana.reduce((sum, pedido) => sum + (pedido.total || 0), 0);
-      const ventasMes = pedidosMes.reduce((sum, pedido) => sum + (pedido.total || 0), 0);
+      const ventasHoy = pedidosHoy.reduce((sum, pedido) => sum + parseFloat(pedido.total || 0), 0);
+      const ventasSemana = pedidosSemana.reduce((sum, pedido) => sum + parseFloat(pedido.total || 0), 0);
+      const ventasMes = pedidosMes.reduce((sum, pedido) => sum + parseFloat(pedido.total || 0), 0);
       
       const clientesHoy = new Set(pedidosHoy.map(p => p.usuario_id)).size;
       const clientesSemana = new Set(pedidosSemana.map(p => p.usuario_id)).size;
@@ -216,7 +216,7 @@ class SellerDashboardService {
         const fechaPedido = new Date(pedido.fecha_pedido).toISOString().split('T')[0];
         const dayData = last7Days.find(day => day.fecha === fechaPedido);
         if (dayData) {
-          dayData.ventas += pedido.total || 0;
+          dayData.ventas += parseFloat(pedido.total || 0);
           dayData.pedidos += 1;
         }
       });

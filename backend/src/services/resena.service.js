@@ -14,7 +14,7 @@ class ResenaService {
           model: Usuario,
           attributes: ['nombre', 'apellido']
         }],
-        order: [['fecha', 'DESC']]
+        order: [['fecha_resena', 'DESC']]
       });
       return resenas.map(resena => resena.toJSON());
     } catch (error) {
@@ -47,6 +47,49 @@ class ResenaService {
   }
 
   /**
+   * Encuentra reseñas por usuario ID
+   * @param {number} usuarioId - ID del usuario
+   * @returns {Promise<Array>} - Lista de reseñas del usuario
+   */
+  static async findByUsuarioId(usuarioId) {
+    try {
+      const resenas = await Resena.findAll({
+        where: { usuario_id: usuarioId },
+        include: [{
+          model: Producto,
+          attributes: ['nombre', 'imagen_url']
+        }],
+        order: [['fecha_resena', 'DESC']]
+      });
+      return resenas.map(resena => resena.toJSON());
+    } catch (error) {
+      console.error('Error al buscar reseñas por usuario ID:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Encuentra reseña por usuario y producto
+   * @param {number} usuarioId - ID del usuario
+   * @param {number} productoId - ID del producto
+   * @returns {Promise<Object>} - Reseña encontrada
+   */
+  static async findByUsuarioAndProducto(usuarioId, productoId) {
+    try {
+      const resena = await Resena.findOne({
+        where: { 
+          usuario_id: usuarioId,
+          producto_id: productoId 
+        }
+      });
+      return resena ? resena.toJSON() : null;
+    } catch (error) {
+      console.error('Error al buscar reseña por usuario y producto:', error);
+      throw error;
+    }
+  }
+
+  /**
    * Crea una nueva reseña
    * @param {Object} data - Datos de la reseña
    * @returns {Promise<Object>} - Reseña creada
@@ -60,7 +103,7 @@ class ResenaService {
         producto_id,
         calificacion,
         comentario,
-        fecha: new Date()
+        fecha_resena: new Date()
       });
       
       const resenaCompleta = await this.findById(nuevaResena.resena_id);
@@ -127,6 +170,36 @@ class ResenaService {
       return resenaEliminada;
     } catch (error) {
       console.error('Error al eliminar reseña:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Obtiene estadísticas de reseñas de un producto
+   * @param {number} productoId - ID del producto
+   * @returns {Promise<Object>} - Estadísticas de reseñas
+   */
+  static async getStatsProducto(productoId) {
+    try {
+      const resenas = await this.findByProductoId(productoId);
+      
+      const stats = {
+        totalResenas: resenas.length,
+        promedioCalificacion: resenas.length > 0 
+          ? (resenas.reduce((sum, r) => sum + r.calificacion, 0) / resenas.length).toFixed(1)
+          : 0,
+        distribucionCalificaciones: {
+          5: resenas.filter(r => r.calificacion === 5).length,
+          4: resenas.filter(r => r.calificacion === 4).length,
+          3: resenas.filter(r => r.calificacion === 3).length,
+          2: resenas.filter(r => r.calificacion === 2).length,
+          1: resenas.filter(r => r.calificacion === 1).length
+        }
+      };
+
+      return stats;
+    } catch (error) {
+      console.error('Error al obtener estadísticas de reseñas:', error);
       throw error;
     }
   }

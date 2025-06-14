@@ -49,12 +49,12 @@ class ClientDashboardService {
       );
 
       // Calcular estadísticas
-      const totalGastadoMes = pedidosMes.reduce((sum, pedido) => sum + (pedido.total || 0), 0);
-      const totalGastadoAno = pedidosAno.reduce((sum, pedido) => sum + (pedido.total || 0), 0);
+      const totalGastadoMes = pedidosMes.reduce((sum, pedido) => sum + parseFloat(pedido.total || 0), 0);
+      const totalGastadoAno = pedidosAno.reduce((sum, pedido) => sum + parseFloat(pedido.total || 0), 0);
       const pedidosRealizadosMes = pedidosMes.length;
       const pedidosRealizadosAno = pedidosAno.length;
       const ticketPromedio = userOrders.length > 0 ? 
-        userOrders.reduce((sum, pedido) => sum + (pedido.total || 0), 0) / userOrders.length : 0;
+        userOrders.reduce((sum, pedido) => sum + parseFloat(pedido.total || 0), 0) / userOrders.length : 0;
 
       // Último pedido
       const ultimoPedido = userOrders.length > 0 ? 

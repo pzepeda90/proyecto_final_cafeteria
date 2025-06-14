@@ -1,6 +1,16 @@
 const MesaService = require('../services/mesa.service');
 const Joi = require('joi');
 
+// Obtener todas las mesas con pedidos activos
+const getAllWithOrders = async (req, res, next) => {
+  try {
+    const mesas = await MesaService.findAllWithOrders();
+    res.json(mesas);
+  } catch (error) {
+    next(error);
+  }
+};
+
 // Obtener todas las mesas
 const getAll = async (req, res, next) => {
   try {
@@ -112,6 +122,10 @@ const update = async (req, res, next) => {
 // Actualizar estado de mesa
 const updateStatus = async (req, res, next) => {
   try {
+    console.log('Controller: Recibida petición para actualizar estado de mesa');
+    console.log('Params:', req.params);
+    console.log('Body:', req.body);
+    
     const { id } = req.params;
     const { estado } = req.body;
     
@@ -121,18 +135,34 @@ const updateStatus = async (req, res, next) => {
 
     const { error } = schema.validate({ estado });
     if (error) {
+      console.log('Controller: Error de validación:', error.details[0].message);
       return res.status(400).json({ 
         mensaje: 'Estado inválido', 
         error: error.details[0].message 
       });
     }
 
+    console.log(`Controller: Validación exitosa, actualizando mesa ${id} a estado ${estado}`);
     const mesa = await MesaService.updateStatus(id, estado);
+    
+    // Invalidar cache de mesas después de actualizar
+    if (req.app.locals.redisClient) {
+      try {
+        await req.app.locals.redisClient.del('/api/mesas');
+        await req.app.locals.redisClient.del(`/api/mesas/${id}`);
+        console.log('Controller: Cache de mesas invalidado');
+      } catch (cacheError) {
+        console.warn('Controller: Error al invalidar cache:', cacheError);
+      }
+    }
+    
+    console.log('Controller: Mesa actualizada exitosamente:', mesa.toJSON());
     res.json({
       mensaje: 'Estado de mesa actualizado exitosamente',
       mesa
     });
   } catch (error) {
+    console.error('Controller: Error al actualizar estado:', error);
     if (error.message === 'Mesa no encontrada') {
       return res.status(404).json({ mensaje: error.message });
     }
@@ -158,6 +188,7 @@ const deleteMesa = async (req, res, next) => {
 };
 
 module.exports = {
+  getAllWithOrders,
   getAll,
   getAvailable,
   getById,

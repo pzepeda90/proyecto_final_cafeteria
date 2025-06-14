@@ -39,6 +39,19 @@ axiosInstance.interceptors.response.use(
 
 class MesasService {
   /**
+   * Obtener mesas con pedidos activos
+   */
+  static async getMesasConPedidos() {
+    try {
+      const response = await axiosInstance.get('/mesas/con-pedidos');
+      return response.data;
+    } catch (error) {
+      console.error('Error al obtener mesas con pedidos:', error);
+      throw new Error(error.response?.data?.mensaje || 'Error al obtener mesas con pedidos');
+    }
+  }
+
+  /**
    * Obtener todas las mesas
    */
   static async getMesas() {

@@ -6,7 +6,8 @@ const ClienteSelector = ({
   selectedCliente, 
   onClienteSelect, 
   placeholder = "Buscar cliente...",
-  allowCreate = true 
+  allowCreate = true,
+  mesaInfo = null
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [clientes, setClientes] = useState([]);
@@ -25,9 +26,11 @@ const ClienteSelector = ({
 
   useEffect(() => {
     if (selectedCliente) {
-      setSearchTerm(selectedCliente.nombreCompleto || `${selectedCliente.nombre} ${selectedCliente.apellido}`);
+      const clienteName = selectedCliente.nombreCompleto || `${selectedCliente.nombre} ${selectedCliente.apellido}`;
+      const mesaText = mesaInfo ? ` - Mesa ${mesaInfo.numero}` : '';
+      setSearchTerm(clienteName + mesaText);
     }
-  }, [selectedCliente]);
+  }, [selectedCliente, mesaInfo]);
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -78,7 +81,9 @@ const ClienteSelector = ({
   };
 
   const handleClienteSelect = (cliente) => {
-    setSearchTerm(cliente.nombreCompleto);
+    const clienteName = cliente.nombreCompleto;
+    const mesaText = mesaInfo ? ` - Mesa ${mesaInfo.numero}` : '';
+    setSearchTerm(clienteName + mesaText);
     setShowDropdown(false);
     setShowCreateForm(false);
     onClienteSelect(cliente);

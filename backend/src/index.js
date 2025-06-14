@@ -41,11 +41,13 @@ app.use(helmetConfig);
 app.use(compressionMiddleware);
 app.use(performanceMiddleware);
 
-// Rate limiting general
-app.use(rateLimits.general);
-
 // Health check endpoint (sin rate limiting)
 app.get('/health', healthCheckMiddleware);
+
+// Rate limiting general (solo en producción)
+if (process.env.NODE_ENV === 'production') {
+  app.use(rateLimits.general);
+}
 
 // CORS optimizado
 app.use(cors(corsConfig));
@@ -91,16 +93,25 @@ app.use('/api-docs',
 
 // Rutas con rate limiting específico y cache estratégico
 
-// Rutas de autenticación (rate limiting estricto)
-app.use('/api/usuarios/login', rateLimits.auth);
-app.use('/api/usuarios/register', rateLimits.auth);
+// Rutas de autenticación (solo rate limiting en producción)
+if (process.env.NODE_ENV === 'production') {
+  app.use('/api/usuarios/login', rateLimits.auth);
+  app.use('/api/usuarios/register', rateLimits.auth);
+}
 
-// Rutas de productos (cache largo + rate limiting moderado)
-app.use('/api/productos', 
-  rateLimits.products,
-  cacheMiddleware(300), // 5 minutos de cache
-  productosRoutes
-);
+// Rutas de productos (solo cache, sin rate limiting en desarrollo)
+if (process.env.NODE_ENV === 'development') {
+  app.use('/api/productos', 
+    cacheMiddleware(300), // 5 minutos de cache
+    productosRoutes
+  );
+} else {
+  app.use('/api/productos', 
+    rateLimits.products,
+    cacheMiddleware(300), // 5 minutos de cache
+    productosRoutes
+  );
+}
 
 // Rutas de categorías (cache muy largo)
 app.use('/api/categorias',
@@ -111,12 +122,19 @@ app.use('/api/categorias',
 // Rutas de usuarios (sin cache, datos sensibles)
 app.use('/api/usuarios', usuariosRoutes);
 
-// Rutas de pedidos (rate limiting estricto + invalidación de cache)
-app.use('/api/pedidos',
-  rateLimits.orders,
-  invalidateCache(['/api/productos', '/api/carritos']),
-  pedidosRoutes
-);
+// Rutas de pedidos (rate limiting solo en producción)
+if (process.env.NODE_ENV === 'development') {
+  app.use('/api/pedidos',
+    invalidateCache(['/api/productos', '/api/carritos']),
+    pedidosRoutes
+  );
+} else {
+  app.use('/api/pedidos',
+    rateLimits.orders,
+    invalidateCache(['/api/productos', '/api/carritos']),
+    pedidosRoutes
+  );
+}
 
 // Rutas de carritos (sin cache, datos dinámicos)
 app.use('/api/carritos', carritosRoutes);
@@ -153,9 +171,9 @@ app.use('/api/roles',
 // Rutas de direcciones (sin cache, datos personales)
 app.use('/api/direcciones', direccionesRoutes);
 
-// Rutas de mesas (cache moderado)
+// Rutas de mesas (cache corto para POS en tiempo real)
 app.use('/api/mesas',
-  cacheMiddleware(900), // 15 minutos
+  cacheMiddleware(30), // 30 segundos para actualizaciones rápidas en POS
   mesasRoutes
 );
 

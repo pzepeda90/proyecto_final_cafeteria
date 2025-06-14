@@ -160,13 +160,43 @@ const crearProducto = async (req, res, next) => {
     const usuario = await UsuarioService.findById(req.usuario.id);
     let vendedor_id;
     
-    // Si es admin, usar el vendedor_id proporcionado o el predeterminado
     if (usuario && usuario.rol === 'admin') {
-      vendedor_id = value.vendedor_id || 3; // ID del vendedor existente
+      // Si es admin, usar el vendedor_id proporcionado o buscar un vendedor por defecto
+      if (value.vendedor_id) {
+        vendedor_id = value.vendedor_id;
+      } else {
+        // Buscar el primer vendedor disponible
+        const VendedorService = require('../services/vendedor.service');
+        const vendedores = await VendedorService.findAll({ activo: true });
+        if (vendedores.data && vendedores.data.length > 0) {
+          vendedor_id = vendedores.data[0].vendedor_id;
+        } else {
+          return next({ 
+            status: 400, 
+            message: 'No hay vendedores disponibles para asignar al producto', 
+            code: 'NO_VENDEDORES' 
+          });
+        }
+      }
+    } else if (usuario && usuario.rol === 'vendedor') {
+      // Si es vendedor, buscar su registro en la tabla vendedores
+      const VendedorService = require('../services/vendedor.service');
+      const vendedor = await VendedorService.findByUserId(usuario.usuario_id);
+      if (vendedor) {
+        vendedor_id = vendedor.vendedor_id;
+      } else {
+        return next({ 
+          status: 400, 
+          message: 'No se encontró el perfil de vendedor para este usuario', 
+          code: 'VENDEDOR_NO_ENCONTRADO' 
+        });
+      }
     } else {
-      // Verificar si el usuario tiene perfil de vendedor
-      // Por ahora, usamos el vendedor predeterminado
-      vendedor_id = 3; // ID del vendedor existente
+      return next({ 
+        status: 403, 
+        message: 'No tienes permisos para crear productos', 
+        code: 'PERMISOS_INSUFICIENTES' 
+      });
     }
     
     // Crear el producto con los datos validados

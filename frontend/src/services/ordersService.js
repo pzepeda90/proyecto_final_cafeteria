@@ -43,6 +43,11 @@ ordersAPI.interceptors.response.use(
 
 // Mapeo de datos del backend al frontend
 const mapOrderFromBackend = (backendOrder) => {
+  // Validar que el objeto no sea null o undefined
+  if (!backendOrder) {
+    throw new Error('Datos del pedido no válidos');
+  }
+  
   return {
     id: backendOrder.pedido_id,
     numero_pedido: backendOrder.numero_pedido,
@@ -50,7 +55,7 @@ const mapOrderFromBackend = (backendOrder) => {
     vendedorId: backendOrder.vendedor_id,
     clientName: backendOrder.Usuario ? `${backendOrder.Usuario.nombre} ${backendOrder.Usuario.apellido}` : 'Cliente',
     date: backendOrder.fecha_pedido,
-    status: backendOrder.EstadoPedido?.nombre || 'pendiente',
+    status: backendOrder.EstadoPedido?.nombre || 'Pendiente',
     statusId: backendOrder.estado_pedido_id,
     statusColor: backendOrder.EstadoPedido?.color || '#6B7280',
     paymentMethod: backendOrder.MetodoPago?.nombre || 'efectivo',
@@ -251,6 +256,7 @@ class OrdersService {
       const backendData = {
         metodo_pago_id: orderData.paymentMethodId,
         direccion_id: orderData.addressId || null,
+        mesa_id: orderData.mesaId || null,
         tipo_entrega: orderData.deliveryType || 'local',
         notas: orderData.notes || '',
         productos: orderData.items.map(item => ({
@@ -264,6 +270,11 @@ class OrdersService {
       
       const response = await ordersAPI.post('/pedidos/directo', backendData);
       console.log('✅ OrdersService Response:', response.data);
+      
+      // Validar que la respuesta tenga el pedido
+      if (!response.data || !response.data.pedido) {
+        throw new Error('Respuesta inválida del servidor: pedido no encontrado');
+      }
       
       return mapOrderFromBackend(response.data.pedido);
     } catch (error) {

@@ -317,26 +317,34 @@ const SellerDashboard = () => {
 
         {/* Acciones Rápidas */}
         <div className="bg-white rounded-lg shadow p-6">
-          <h2 className="text-xl font-semibold mb-4">⚡ Acciones Rápidas</h2>
-          <div className="space-y-4">
+          <h2 className="text-xl font-semibold mb-6">⚡ Acciones Rápidas</h2>
+          
+          {/* Botones principales */}
+          <div className="space-y-4 mb-6">
             <Link to={PRIVATE_ROUTES[ROLES.VENDEDOR].POS}>
-              <Button variant="primary" className="w-full">
+              <Button variant="primary" className="w-full py-3 mb-2">
                 💰 Punto de Venta
               </Button>
             </Link>
+            
             <Link to={PRIVATE_ROUTES[ROLES.VENDEDOR].MY_PRODUCTS}>
-              <Button variant="secondary" className="w-full">
+              <Button variant="secondary" className="w-full py-3 mb-2">
                 📦 Gestionar Productos
               </Button>
             </Link>
+            
             <Link to={PRIVATE_ROUTES[ROLES.VENDEDOR].MY_ORDERS}>
-              <Button variant="secondary" className="w-full">
+              <Button variant="secondary" className="w-full py-3 mb-2">
                 📋 Ver Pedidos
               </Button>
             </Link>
+          </div>
+
+          {/* Separador visual */}
+          <div className="border-t border-gray-200 pt-4">
             <Button 
               variant="outline" 
-              className="w-full"
+              className="w-full py-3"
               onClick={loadDashboardData}
             >
               🔄 Actualizar Dashboard
