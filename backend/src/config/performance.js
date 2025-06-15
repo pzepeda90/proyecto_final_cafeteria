@@ -352,6 +352,7 @@ const corsConfig = {
       process.env.CORS_ORIGIN,
       // URLs específicas para producción
       'https://cafeteria-lbandito.netlify.app',
+      'https://cafeterialbandito.netlify.app',
       'https://proyecto-final-cafeteria-frontend.netlify.app'
     ].filter(Boolean);
     
