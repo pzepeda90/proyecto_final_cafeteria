@@ -36,8 +36,14 @@ const mesasRoutes = require('./routes/mesas.routes');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Configurar Express para confiar en proxies (necesario para Render)
-app.set('trust proxy', true);
+// Configurar Express para confiar en proxies de Render (más seguro)
+if (process.env.NODE_ENV === 'production') {
+  // En producción (Render), confiar solo en el primer proxy
+  app.set('trust proxy', 1);
+} else {
+  // En desarrollo, no confiar en proxies
+  app.set('trust proxy', false);
+}
 
 // Middleware de seguridad y performance (orden importante)
 app.use(helmetConfig);
