@@ -26,67 +26,101 @@ class DashboardService {
   // Obtener estadísticas generales
   static async getStats() {
     try {
-      const [pedidos, productos] = await Promise.all([
-        dashboardAPI.get('/pedidos'),
-        dashboardAPI.get('/productos')
+      const [statsResponse, productos, pedidos] = await Promise.all([
+        dashboardAPI.get('/pedidos/stats'),
+        dashboardAPI.get('/productos'),
+        dashboardAPI.get('/pedidos')
       ]);
 
+      const stats = statsResponse.data;
       const today = new Date();
-      const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
       const startOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate());
 
-      // Filtrar pedidos del día y mes actual
+      // Filtrar pedidos del día actual
       const pedidosHoy = pedidos.data.filter(pedido => 
         new Date(pedido.fecha_pedido) >= startOfDay
       );
-      
-      const pedidosMes = pedidos.data.filter(pedido => 
-        new Date(pedido.fecha_pedido) >= startOfMonth
-      );
 
-      // Calcular estadísticas
+      // Calcular estadísticas del día
       const ventasHoy = pedidosHoy.reduce((sum, pedido) => sum + parseFloat(pedido.total || 0), 0);
-      const ventasMes = pedidosMes.reduce((sum, pedido) => sum + parseFloat(pedido.total || 0), 0);
       const clientesHoy = new Set(pedidosHoy.map(p => p.usuario_id)).size;
-      const clientesMes = new Set(pedidosMes.map(p => p.usuario_id)).size;
       const ticketPromedio = pedidosHoy.length > 0 ? ventasHoy / pedidosHoy.length : 0;
 
       // Productos con stock bajo (menos de 10 unidades)
       const productosStockBajo = productos.data.filter(p => p.stock < 10).length;
 
-      // Calcular CMV (estimado como 40% de las ventas)
-      const cmv = ventasMes * 0.4;
-      const margenBruto = ventasMes > 0 ? ((ventasMes - cmv) / ventasMes) * 100 : 0;
-
-      // Gastos operativos estimados
-      const gastosOperativos = ventasMes * 0.25;
-
-      // Rotación de inventario (estimada)
-      const valorInventario = productos.data.reduce((sum, p) => sum + (parseFloat(p.precio || 0) * parseInt(p.stock || 0)), 0);
-      const rotacionInventario = valorInventario > 0 ? cmv / valorInventario : 0;
-
+      // Usar estadísticas del backend y complementar con cálculos del día
       return {
         ventasHoy,
-        ventasMes,
-        ticketPromedio,
+        ventasMes: stats.total_ventas || 0,
+        ticketPromedio: stats.promedio_venta || ticketPromedio,
         clientesHoy,
-        clientesMes,
-        cmv,
-        margenBruto,
-        gastosOperativos,
-        rotacionInventario,
+        clientesMes: 0, // Calculado del lado del servidor en futuras versiones
+        cmv: stats.total_ventas * 0.4,
+        margenBruto: stats.total_ventas > 0 ? ((stats.total_ventas - (stats.total_ventas * 0.4)) / stats.total_ventas) * 100 : 0,
+        gastosOperativos: stats.total_ventas * 0.25,
+        rotacionInventario: 0.5, // Mock por ahora
         satisfaccionCliente: 4.6, // Mock por ahora
         merma: 2.5, // Mock por ahora
         productividadPersonal: clientesHoy > 0 ? clientesHoy / 3 : 0, // Asumiendo 3 empleados
         totalProductos: productos.data.length,
         productosStockBajo,
-        totalPedidos: pedidos.data.length,
+        totalPedidos: stats.total_pedidos || 0,
         pedidosHoy: pedidosHoy.length,
-        pedidosMes: pedidosMes.length
+        pedidosMes: stats.total_pedidos || 0
       };
     } catch (error) {
       console.error('Error al obtener estadísticas:', error);
-      throw new Error('Error al obtener estadísticas del dashboard');
+      // Fallback a método anterior si el endpoint de stats falla
+      try {
+        const [pedidos, productos] = await Promise.all([
+          dashboardAPI.get('/pedidos'),
+          dashboardAPI.get('/productos')
+        ]);
+
+        const today = new Date();
+        const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+        const startOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+
+        const pedidosHoy = pedidos.data.filter(pedido => 
+          new Date(pedido.fecha_pedido) >= startOfDay
+        );
+        
+        const pedidosMes = pedidos.data.filter(pedido => 
+          new Date(pedido.fecha_pedido) >= startOfMonth
+        );
+
+        const ventasHoy = pedidosHoy.reduce((sum, pedido) => sum + parseFloat(pedido.total || 0), 0);
+        const ventasMes = pedidosMes.reduce((sum, pedido) => sum + parseFloat(pedido.total || 0), 0);
+        const clientesHoy = new Set(pedidosHoy.map(p => p.usuario_id)).size;
+        const clientesMes = new Set(pedidosMes.map(p => p.usuario_id)).size;
+        const ticketPromedio = pedidosHoy.length > 0 ? ventasHoy / pedidosHoy.length : 0;
+
+        const productosStockBajo = productos.data.filter(p => p.stock < 10).length;
+
+        return {
+          ventasHoy,
+          ventasMes,
+          ticketPromedio,
+          clientesHoy,
+          clientesMes,
+          cmv: ventasMes * 0.4,
+          margenBruto: ventasMes > 0 ? ((ventasMes - (ventasMes * 0.4)) / ventasMes) * 100 : 0,
+          gastosOperativos: ventasMes * 0.25,
+          rotacionInventario: 0.5,
+          satisfaccionCliente: 4.6,
+          merma: 2.5,
+          productividadPersonal: clientesHoy > 0 ? clientesHoy / 3 : 0,
+          totalProductos: productos.data.length,
+          productosStockBajo,
+          totalPedidos: pedidos.data.length,
+          pedidosHoy: pedidosHoy.length,
+          pedidosMes: pedidosMes.length
+        };
+      } catch (fallbackError) {
+        console.error('Error en fallback:', fallbackError);
+        throw new Error('Error al obtener estadísticas del dashboard');
+      }
     }
   }
 
