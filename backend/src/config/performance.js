@@ -25,8 +25,9 @@ const redisConfig = {
 // Instancia de Redis
 let redisClient = null;
 
-// Solo intentar conectar a Redis si no estamos en modo test
-if (process.env.NODE_ENV !== 'test') {
+// Redis temporalmente deshabilitado en producción para evitar errores
+// TODO: Re-habilitar cuando se configure correctamente
+if (false && process.env.NODE_ENV !== 'test' && process.env.REDIS_URL) {
   try {
     redisClient = new Redis({
       host: process.env.REDIS_HOST || 'localhost',
@@ -40,10 +41,14 @@ if (process.env.NODE_ENV !== 'test') {
     
     redisClient.on('error', (err) => {
       console.warn('⚠️ Error de Redis:', err.message);
+      redisClient = null;
     });
   } catch (error) {
     console.warn('⚠️ Redis no disponible, cache deshabilitado');
+    redisClient = null;
   }
+} else {
+  console.log('ℹ️ Redis deshabilitado, usando cache en memoria');
 }
 
 /**
