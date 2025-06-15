@@ -80,7 +80,7 @@ const ReadReviewsModal = ({ isOpen, onClose, productoId, producto, onWriteReview
         <div className="sticky top-0 bg-white rounded-t-xl px-6 py-4 border-b border-gray-200 flex items-center justify-between">
           <div>
             <h2 className="text-xl font-bold text-gray-900 flex items-center space-x-2">
-              <MessageCircle size={20} className="text-blue-500" />
+              <MessageCircle size={20} className="text-primary-500" />
               <span>Reseñas del producto</span>
             </h2>
             {producto && (
@@ -97,7 +97,7 @@ const ReadReviewsModal = ({ isOpen, onClose, productoId, producto, onWriteReview
 
         {/* Stats Section */}
         {stats && (
-          <div className="px-6 py-4 bg-gradient-to-r from-blue-50 to-indigo-50 border-b">
+          <div className="px-6 py-4 bg-gradient-to-r from-primary-50 to-primary-100 border-b">
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-4">
                 <div className="text-center">
@@ -114,7 +114,7 @@ const ReadReviewsModal = ({ isOpen, onClose, productoId, producto, onWriteReview
               </div>
               <button
                 onClick={handleWriteReview}
-                className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors text-sm font-medium"
+                className="bg-primary-500 text-white px-4 py-2 rounded-md hover:bg-primary-600 transition-colors text-sm font-medium"
               >
                 Escribir reseña
               </button>
@@ -126,7 +126,7 @@ const ReadReviewsModal = ({ isOpen, onClose, productoId, producto, onWriteReview
         <div className="overflow-y-auto max-h-[60vh]">
           {loading ? (
             <div className="flex items-center justify-center py-12">
-              <div className="animate-spin rounded-full h-8 w-8 border-4 border-blue-500 border-t-transparent"></div>
+              <div className="animate-spin rounded-full h-8 w-8 border-4 border-primary-500 border-t-transparent"></div>
               <span className="ml-3 text-gray-600">Cargando reseñas...</span>
             </div>
           ) : error ? (
@@ -135,7 +135,7 @@ const ReadReviewsModal = ({ isOpen, onClose, productoId, producto, onWriteReview
               <p className="text-gray-600">{error}</p>
               <button
                 onClick={cargarReseñas}
-                className="mt-4 text-blue-600 hover:text-blue-700 font-medium"
+                className="mt-4 text-primary-600 hover:text-primary-700 font-medium"
               >
                 Reintentar
               </button>
@@ -151,7 +151,7 @@ const ReadReviewsModal = ({ isOpen, onClose, productoId, producto, onWriteReview
               </p>
               <button
                 onClick={handleWriteReview}
-                className="bg-blue-600 text-white px-6 py-2 rounded-md hover:bg-blue-700 transition-colors"
+                className="bg-primary-500 text-white px-6 py-2 rounded-md hover:bg-primary-600 transition-colors"
               >
                 Escribir primera reseña
               </button>

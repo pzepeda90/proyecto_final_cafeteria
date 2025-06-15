@@ -1,8 +1,8 @@
 const redis = require('../config/redis');
 const { logger } = require('./logger');
 
-// Tiempo de expiración por defecto (5 minutos)
-const DEFAULT_EXPIRATION = 300;
+// Tiempo de expiración por defecto (5 segundos para debugging)
+const DEFAULT_EXPIRATION = 5;
 
 // Función para obtener datos del caché
 const getCache = async (key) => {
@@ -94,6 +94,60 @@ const cacheKeys = {
   orders: (userId) => `orders:${userId}`,
 };
 
+// Función para limpiar completamente el cache de mesas
+const clearMesasCache = async () => {
+  try {
+    const patterns = [
+      'cache:*/api/mesas*',
+      'cache:/api/mesas*',
+      'cache:*mesas*'
+    ];
+    
+    for (const pattern of patterns) {
+      const keys = await redis.keys(pattern);
+      if (keys.length > 0) {
+        await redis.del(keys);
+        logger.info(`🧹 Cache limpiado: ${keys.length} keys eliminadas para patrón ${pattern}`);
+      }
+    }
+    return true;
+  } catch (error) {
+    logger.error(`Error al limpiar cache de mesas: ${error.message}`);
+    return false;
+  }
+};
+
+// Función para limpiar completamente el cache de reseñas
+const clearResenasCache = async (productoId = null) => {
+  try {
+    let patterns = [
+      'cache:*/api/productos/*/resenas*',
+      'cache:/api/productos/*/resenas*',
+      'cache:*/api/resenas*',
+      'cache:/api/resenas*',
+      'cache:*resenas*'
+    ];
+    
+    // Si se especifica un producto, limpiar cache específico
+    if (productoId) {
+      patterns.push(`cache:*/api/productos/${productoId}/resenas*`);
+      patterns.push(`cache:/api/productos/${productoId}/resenas*`);
+    }
+    
+    for (const pattern of patterns) {
+      const keys = await redis.keys(pattern);
+      if (keys.length > 0) {
+        await redis.del(keys);
+        logger.info(`🧹 Cache de reseñas limpiado: ${keys.length} keys eliminadas para patrón ${pattern}`);
+      }
+    }
+    return true;
+  } catch (error) {
+    logger.error(`Error al limpiar cache de reseñas: ${error.message}`);
+    return false;
+  }
+};
+
 module.exports = {
   getCache,
   setCache,
@@ -101,5 +155,7 @@ module.exports = {
   cacheMiddleware,
   invalidateCacheByPattern,
   cacheKeys,
+  clearMesasCache,
+  clearResenasCache,
   DEFAULT_EXPIRATION
 }; 

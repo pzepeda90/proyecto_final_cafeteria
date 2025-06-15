@@ -7,12 +7,19 @@ const Joi = require('joi');
 // Obtener todos los pedidos
 const obtenerPedidos = async (req, res) => {
   try {
+    console.log('🔍 Obteniendo pedidos - Usuario ID:', req.usuario.id);
     const usuario = await UsuarioService.findById(req.usuario.id);
+    console.log('👤 Usuario encontrado:', usuario ? { id: usuario.usuario_id, rol: usuario.rol } : 'No encontrado');
+    
     let options = {};
     
     // Si es cliente, solo ver sus pedidos
-    if (!usuario || usuario.rol !== 'admin') {
+    // Admin y vendedor pueden ver todos los pedidos
+    if (!usuario || (usuario.rol !== 'admin' && usuario.rol !== 'vendedor')) {
+      console.log('🔒 Usuario no es admin/vendedor, filtrando por usuario_id:', req.usuario.id);
       options.usuario_id = req.usuario.id;
+    } else {
+      console.log('🔓 Usuario es admin/vendedor, mostrando todos los pedidos');
     }
     
     // Filtros adicionales
@@ -25,10 +32,13 @@ const obtenerPedidos = async (req, res) => {
       options.fecha_fin = req.query.fecha_fin;
     }
     
+    console.log('📊 Opciones de filtro:', options);
     const pedidos = await PedidoService.findAll(options);
+    console.log('📋 Pedidos encontrados:', pedidos.length);
+    
     res.json(pedidos);
   } catch (error) {
-    console.error('Error al obtener pedidos:', error);
+    console.error('❌ Error al obtener pedidos:', error);
     res.status(500).json({ mensaje: 'Error al obtener pedidos' });
   }
 };
@@ -105,9 +115,21 @@ const crearPedido = async (req, res, next) => {
       precio_unitario: detalle.Producto.precio
     }));
     
+    // Obtener información del usuario que está creando el pedido
+    const usuario = await UsuarioService.findById(req.usuario.id);
+    
+    // Si es un vendedor, buscar su ID de vendedor
+    let vendedor_id = null;
+    if (usuario && usuario.rol === 'vendedor') {
+      const VendedorService = require('../services/vendedor.service');
+      const vendedor = await VendedorService.findByUserId(usuario.usuario_id);
+      vendedor_id = vendedor ? vendedor.vendedor_id : null;
+    }
+
     // Crear el pedido
     const pedido = await PedidoService.create({
       usuario_id: req.usuario.id,
+      vendedor_id,
       metodo_pago_id,
       direccion_id: direccionFinal,
       carrito_id: carrito.carrito_id,
@@ -133,7 +155,7 @@ const crearPedidoDirecto = async (req, res, next) => {
       metodo_pago_id: Joi.number().integer().required(),
       direccion_id: Joi.number().integer().allow(null).optional(),
       mesa_id: Joi.number().integer().allow(null).optional(),
-      tipo_entrega: Joi.string().valid('local', 'domicilio', 'takeaway', 'dine_in').default('local'),
+      tipo_entrega: Joi.string().valid('local', 'delivery', 'takeaway', 'dine_in').default('local'),
       notas: Joi.string().allow('', null).optional(),
       productos: Joi.array().items(
         Joi.object({
@@ -149,6 +171,19 @@ const crearPedidoDirecto = async (req, res, next) => {
     
     const { metodo_pago_id, direccion_id, mesa_id, tipo_entrega, notas, productos } = req.body;
     
+    console.log('📥 Pedido directo recibido:', {
+      metodo_pago_id,
+      direccion_id,
+      mesa_id,
+      tipo_entrega,
+      notas,
+      productos_count: productos.length
+    });
+    
+    console.log('🆔 Mesa ID recibido específicamente:', mesa_id);
+    console.log('📝 Tipo de mesa_id:', typeof mesa_id);
+    console.log('🔍 ¿Mesa ID es válido?:', mesa_id !== null && mesa_id !== undefined && mesa_id !== '');
+    
     // Validar que los productos existan y tengan stock suficiente
     for (const producto of productos) {
       const productoExistente = await require('../services/producto.service').findById(producto.producto_id);
@@ -162,9 +197,23 @@ const crearPedidoDirecto = async (req, res, next) => {
       }
     }
     
+    // Obtener información del usuario que está creando el pedido
+    const usuario = await UsuarioService.findById(req.usuario.id);
+    console.log('👤 Usuario creando pedido directo:', { id: usuario.usuario_id, rol: usuario.rol });
+    
+    // Si es un vendedor, buscar su ID de vendedor
+    let vendedor_id = null;
+    if (usuario && usuario.rol === 'vendedor') {
+      const VendedorService = require('../services/vendedor.service');
+      const vendedor = await VendedorService.findByUserId(usuario.usuario_id);
+      vendedor_id = vendedor ? vendedor.vendedor_id : null;
+      console.log('🛒 Vendedor encontrado:', vendedor_id);
+    }
+
     // Crear el pedido directo
     const pedido = await PedidoService.createDirect({
       usuario_id: req.usuario.id,
+      vendedor_id,
       metodo_pago_id,
       direccion_id,
       mesa_id,

@@ -238,7 +238,7 @@ class AdminService {
         numero: mesaData.numero,
         capacidad: mesaData.capacidad,
         ubicacion: mesaData.ubicacion || '',
-        disponible: mesaData.disponible !== undefined ? mesaData.disponible : true
+        estado: mesaData.estado || 'disponible'
       });
       
       console.log('Mesa creada exitosamente:', response.data);
@@ -282,12 +282,35 @@ class AdminService {
         numero: mesaData.numero,
         capacidad: mesaData.capacidad,
         ubicacion: mesaData.ubicacion || '',
-        disponible: mesaData.disponible
+        estado: mesaData.estado
       });
       return response.data;
     } catch (error) {
       console.error('Error al actualizar mesa:', error);
       let errorMessage = 'Error al actualizar mesa';
+      
+      if (error.response?.status === 403) {
+        errorMessage = 'No tienes permisos para actualizar mesas';
+      } else if (error.response?.data?.mensaje) {
+        errorMessage = error.response.data.mensaje;
+      }
+      
+      throw new Error(errorMessage);
+    }
+  }
+
+  /**
+   * Actualizar estado de mesa
+   */
+  static async updateMesaStatus(id, estado) {
+    try {
+      const response = await axiosInstance.put(`/mesas/${id}/estado`, {
+        estado: estado
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Error al actualizar estado de mesa:', error);
+      let errorMessage = 'Error al actualizar estado de mesa';
       
       if (error.response?.status === 403) {
         errorMessage = 'No tienes permisos para actualizar mesas';

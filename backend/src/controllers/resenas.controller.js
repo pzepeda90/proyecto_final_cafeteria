@@ -1,4 +1,6 @@
 const ResenaService = require('../services/resena.service');
+const { clearResenasCache } = require('../utils/cache');
+const { clearResenasNodeCache } = require('../config/performance');
 
 const resenasController = {
   async getByProductoId(req, res) {
@@ -74,6 +76,10 @@ const resenasController = {
         comentario: comentario || null
       });
 
+      // Invalidar ambos sistemas de cache de reseñas para el producto específico
+      await clearResenasCache(producto_id);
+      clearResenasNodeCache(producto_id);
+
       res.status(201).json({
         mensaje: 'Reseña creada exitosamente',
         resena: nuevaResena
@@ -124,6 +130,10 @@ const resenasController = {
         comentario
       });
 
+      // Invalidar ambos sistemas de cache de reseñas para el producto específico
+      await clearResenasCache(resenaExistente.producto_id);
+      clearResenasNodeCache(resenaExistente.producto_id);
+
       res.json({
         mensaje: 'Reseña actualizada exitosamente',
         resena: resenaActualizada
@@ -162,6 +172,10 @@ const resenasController = {
       }
 
       await ResenaService.delete(id);
+
+      // Invalidar ambos sistemas de cache de reseñas para el producto específico
+      await clearResenasCache(resenaExistente.producto_id);
+      clearResenasNodeCache(resenaExistente.producto_id);
 
       res.json({
         mensaje: 'Reseña eliminada exitosamente'

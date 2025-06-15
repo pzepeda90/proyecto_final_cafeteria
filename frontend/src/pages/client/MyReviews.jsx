@@ -150,7 +150,7 @@ const MyReviews = () => {
                       <div className="flex items-center space-x-2">
                         <button
                           onClick={() => setEditandoResena(resena.resena_id)}
-                          className="p-2 text-gray-500 hover:text-blue-600 transition-colors"
+                          className="p-2 text-gray-500 hover:text-primary-600 transition-colors"
                           title="Editar reseña"
                         >
                           <Edit2 size={16} />
@@ -270,7 +270,7 @@ const EditReviewForm = ({ resena, onSave, onCancel }) => {
           value={comentario}
           onChange={(e) => setComentario(e.target.value)}
           rows={4}
-          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
           placeholder="Actualiza tu comentario..."
           maxLength={1000}
         />
@@ -280,7 +280,7 @@ const EditReviewForm = ({ resena, onSave, onCancel }) => {
         <button
           type="submit"
           disabled={loading}
-          className="flex items-center space-x-2 bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 disabled:opacity-50 transition-colors"
+          className="flex items-center space-x-2 bg-primary-500 text-white px-4 py-2 rounded-md hover:bg-primary-600 disabled:opacity-50 transition-colors"
         >
           <Save size={16} />
           <span>{loading ? 'Guardando...' : 'Guardar'}</span>

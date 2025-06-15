@@ -1,4 +1,5 @@
 const MesaService = require('../services/mesa.service');
+const { clearMesasCache } = require('../utils/cache');
 const Joi = require('joi');
 
 // Obtener todas las mesas con pedidos activos
@@ -146,14 +147,11 @@ const updateStatus = async (req, res, next) => {
     const mesa = await MesaService.updateStatus(id, estado);
     
     // Invalidar cache de mesas después de actualizar
-    if (req.app.locals.redisClient) {
-      try {
-        await req.app.locals.redisClient.del('/api/mesas');
-        await req.app.locals.redisClient.del(`/api/mesas/${id}`);
-        console.log('Controller: Cache de mesas invalidado');
-      } catch (cacheError) {
-        console.warn('Controller: Error al invalidar cache:', cacheError);
-      }
+    try {
+      await clearMesasCache();
+      console.log('Controller: Cache de mesas completamente limpiado');
+    } catch (cacheError) {
+      console.warn('Controller: Error al limpiar cache:', cacheError);
     }
     
     console.log('Controller: Mesa actualizada exitosamente:', mesa.toJSON());
@@ -187,6 +185,51 @@ const deleteMesa = async (req, res, next) => {
   }
 };
 
+// Obtener mesa específica con información de pedidos
+const getMesaWithOrdersById = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const { Pedido, Usuario, EstadoPedido } = require('../models/orm');
+    const { Op } = require('sequelize');
+    
+    const mesa = await MesaService.findById(id);
+    if (!mesa) {
+      return res.status(404).json({ mensaje: 'Mesa no encontrada' });
+    }
+    
+    // Buscar pedidos activos para esta mesa
+    const pedidosActivos = await Pedido.findAll({
+      where: {
+        mesa_id: id,
+        estado_pedido_id: {
+          [Op.notIn]: await EstadoPedido.findAll({
+            where: { nombre: { [Op.in]: ['Entregado', 'Cancelado'] } },
+            attributes: ['estado_pedido_id']
+          }).then(estados => estados.map(e => e.estado_pedido_id))
+        }
+      },
+      include: [
+        { model: Usuario, attributes: ['nombre', 'apellido'] },
+        { model: EstadoPedido, attributes: ['nombre', 'descripcion'] }
+      ],
+      order: [['fecha_pedido', 'DESC']]
+    });
+    
+    console.log(`🔍 Mesa ${mesa.numero} - Estado: ${mesa.estado}, Pedidos activos: ${pedidosActivos.length}`);
+    pedidosActivos.forEach(p => {
+      console.log(`   - Pedido ID: ${p.pedido_id}, Estado: ${p.EstadoPedido.nombre}`);
+    });
+    
+    res.json({
+      mesa: mesa.toJSON(),
+      pedidos_activos: pedidosActivos.map(p => p.toJSON()),
+      total_pedidos_activos: pedidosActivos.length
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   getAllWithOrders,
   getAll,
@@ -195,5 +238,6 @@ module.exports = {
   create,
   update,
   updateStatus,
-  delete: deleteMesa
+  delete: deleteMesa,
+  getMesaWithOrdersById
 }; 

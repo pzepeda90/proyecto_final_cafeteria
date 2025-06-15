@@ -44,44 +44,46 @@ const ProductFormModal = ({ product, onClose, onSave }) => {
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-      <div className="bg-white rounded-lg w-full max-w-2xl">
-        <div className="p-6">
+      <div className="bg-white rounded-lg w-full max-w-2xl mx-4 max-h-[90vh] overflow-y-auto">
+        <div className="p-4 sm:p-6 lg:p-8">
           <h2 className="text-2xl font-bold mb-6">
             {product ? 'Editar Producto' : 'Agregar Nuevo Producto'}
           </h2>
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-6">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Nombre
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Nombre *
               </label>
               <input
                 type="text"
                 name="name"
                 value={formData.name}
                 onChange={handleChange}
-                className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-primary focus:border-transparent"
+                className="w-full px-3 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-primary focus:border-transparent text-sm"
                 required
+                placeholder="Nombre del producto"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Descripción
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Descripción *
               </label>
               <textarea
                 name="description"
                 value={formData.description}
                 onChange={handleChange}
                 rows="3"
-                className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-primary focus:border-transparent"
+                className="w-full px-3 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-primary focus:border-transparent text-sm resize-none"
                 required
+                placeholder="Describe las características del producto"
               />
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Precio
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Precio *
                 </label>
                 <input
                   type="number"
@@ -89,20 +91,22 @@ const ProductFormModal = ({ product, onClose, onSave }) => {
                   value={formData.price}
                   onChange={handleChange}
                   min="0"
-                  className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-primary focus:border-transparent"
+                  step="0.01"
+                  className="w-full px-3 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-primary focus:border-transparent text-sm"
                   required
+                  placeholder="0.00"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Categoría
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Categoría *
                 </label>
                 <select
                   name="category_id"
                   value={formData.category_id}
                   onChange={handleChange}
-                  className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-primary focus:border-transparent"
+                  className="w-full px-3 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-primary focus:border-transparent text-sm"
                   required
                 >
                   <option value="">Seleccionar categoría</option>
@@ -116,7 +120,7 @@ const ProductFormModal = ({ product, onClose, onSave }) => {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
                 URL de la imagen
               </label>
               <input
@@ -124,8 +128,8 @@ const ProductFormModal = ({ product, onClose, onSave }) => {
                 name="image"
                 value={formData.image}
                 onChange={handleChange}
-                className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-primary focus:border-transparent"
-                required
+                className="w-full px-3 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-primary focus:border-transparent text-sm"
+                placeholder="https://ejemplo.com/imagen.jpg"
               />
             </div>
 
@@ -142,11 +146,11 @@ const ProductFormModal = ({ product, onClose, onSave }) => {
               </label>
             </div>
 
-            <div className="flex justify-end space-x-4 pt-4">
-              <Button variant="secondary" type="button" onClick={onClose}>
+            <div className="flex flex-col sm:flex-row justify-end gap-3 pt-6 mt-6 border-t border-gray-200">
+              <Button variant="secondary" type="button" onClick={onClose} className="w-full sm:w-auto order-2 sm:order-1">
                 Cancelar
               </Button>
-              <Button type="submit">
+              <Button type="submit" className="w-full sm:w-auto order-1 sm:order-2">
                 {product ? 'Guardar Cambios' : 'Crear Producto'}
               </Button>
             </div>

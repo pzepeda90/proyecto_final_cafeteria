@@ -2,7 +2,7 @@ import axios from 'axios';
 
 // Configuración base de axios para pedidos
 const ordersAPI = axios.create({
-  baseURL: `${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api`,
+  baseURL: 'http://localhost:3000/api',
   headers: {
     'Content-Type': 'application/json',
   },
@@ -48,12 +48,16 @@ const mapOrderFromBackend = (backendOrder) => {
     throw new Error('Datos del pedido no válidos');
   }
   
+
+  
   return {
     id: backendOrder.pedido_id,
     numero_pedido: backendOrder.numero_pedido,
     userId: backendOrder.usuario_id,
     vendedorId: backendOrder.vendedor_id,
     clientName: backendOrder.Usuario ? `${backendOrder.Usuario.nombre} ${backendOrder.Usuario.apellido}` : 'Cliente',
+    takenBy: backendOrder.Vendedor ? `${backendOrder.Vendedor.nombre} ${backendOrder.Vendedor.apellido}` : 'Sistema',
+    tableNumber: backendOrder.Mesa ? `Mesa ${backendOrder.Mesa.numero}` : null,
     date: backendOrder.fecha_pedido,
     status: backendOrder.EstadoPedido?.nombre || 'Pendiente',
     statusId: backendOrder.estado_pedido_id,
@@ -267,9 +271,12 @@ class OrdersService {
       };
       
       console.log('📤 Creando pedido directo:', backendData);
+      console.log('🆔 Mesa ID en backendData:', backendData.mesa_id);
+      console.log('📝 Tipo entrega en backendData:', backendData.tipo_entrega);
       
       const response = await ordersAPI.post('/pedidos/directo', backendData);
       console.log('✅ OrdersService Response:', response.data);
+      console.log('🆔 Mesa ID en respuesta:', response.data.pedido?.mesa_id);
       
       // Validar que la respuesta tenga el pedido
       if (!response.data || !response.data.pedido) {

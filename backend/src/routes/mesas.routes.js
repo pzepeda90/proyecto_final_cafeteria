@@ -88,9 +88,30 @@ router.get('/con-pedidos', mesasController.getAllWithOrders);
 
 /**
  * @swagger
+ * /api/mesas/{id}/detalle:
+ *   get:
+ *     summary: Obtener información detallada de una mesa con pedidos activos
+ *     tags:
+ *       - Mesas
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       200:
+ *         description: Información detallada de la mesa
+ *       404:
+ *         description: Mesa no encontrada
+ */
+router.get('/:id/detalle', mesasController.getMesaWithOrdersById);
+
+/**
+ * @swagger
  * /api/mesas/{id}:
  *   get:
- *     summary: Obtener mesa por ID
+ *     summary: Obtener una mesa por ID
  *     tags:
  *       - Mesas
  *     parameters:

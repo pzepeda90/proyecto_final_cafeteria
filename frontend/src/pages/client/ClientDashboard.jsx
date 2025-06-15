@@ -5,7 +5,14 @@ import Button from '../../components/ui/Button';
 import { formatCurrency } from '../../utils/formatters';
 import { PRIVATE_ROUTES } from '../../constants/routes';
 import ClientDashboardService from '../../services/clientDashboardService';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+// Importaciones específicas para optimizar bundle
+import { BarChart } from 'recharts/lib/chart/BarChart';
+import { Bar } from 'recharts/lib/cartesian/Bar';
+import { XAxis } from 'recharts/lib/cartesian/XAxis';
+import { YAxis } from 'recharts/lib/cartesian/YAxis';
+import { CartesianGrid } from 'recharts/lib/cartesian/CartesianGrid';
+import { Tooltip } from 'recharts/lib/component/Tooltip';
+import { ResponsiveContainer } from 'recharts/lib/component/ResponsiveContainer';
 
 const ClientDashboard = () => {
   const { user } = useSelector((state) => state.auth);

@@ -1,5 +1,6 @@
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { useSelector } from 'react-redux';
+import { lazy, Suspense } from 'react';
 import { PRIVATE_ROUTES, PUBLIC_ROUTES } from '../constants/routes';
 import { ROLES } from '../constants/roles';
 
@@ -14,6 +15,7 @@ import LoginPage from '../pages/auth/LoginPage';
 import RegisterPage from '../pages/auth/RegisterPage';
 import ProductsPage from '../pages/products/ProductsPage';
 import ProductReviewsPage from '../pages/products/ProductReviewsPage';
+import NotFound from '../pages/NotFound';
 
 // Páginas comunes
 import Profile from '../pages/Profile';
@@ -24,12 +26,19 @@ import Cart from '../pages/client/Cart';
 import Orders from '../pages/client/Orders';
 import MyReviews from '../pages/client/MyReviews';
 
-// Páginas de administrador
-import AdminDashboard from '../pages/admin/Dashboard';
+// Páginas de administrador (lazy loading para dashboards pesados)
+const AdminDashboard = lazy(() => import('../pages/admin/Dashboard'));
 import AdminOrders from '../pages/admin/orders/OrdersManagement';
 import ProductsManagement from '../pages/admin/products/ProductsManagement';
 import ProductForm from '../pages/admin/products/ProductForm';
 import UsersManagement from '../pages/admin/users/UsersManagement';
+
+// Loader component
+const LoadingSpinner = () => (
+  <div className="flex justify-center items-center h-64">
+    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+  </div>
+);
 
 // Componente ProtectedRoute
 const ProtectedRoute = ({ isAllowed, redirectTo, children }) => {
@@ -96,7 +105,11 @@ const AppRouter = () => {
           </ProtectedRoute>
         }
       >
-        <Route path={PRIVATE_ROUTES.ADMIN.DASHBOARD} element={<AdminDashboard />} />
+        <Route path={PRIVATE_ROUTES.ADMIN.DASHBOARD} element={
+          <Suspense fallback={<LoadingSpinner />}>
+            <AdminDashboard />
+          </Suspense>
+        } />
         <Route path={PRIVATE_ROUTES.ADMIN.ORDERS} element={<AdminOrders />} />
         <Route path={PRIVATE_ROUTES.ADMIN.PRODUCTS} element={<ProductsManagement />} />
         <Route path={PRIVATE_ROUTES.ADMIN.NEW_PRODUCT} element={<ProductForm />} />
@@ -106,7 +119,9 @@ const AppRouter = () => {
 
       {/* Ruta por defecto */}
       <Route path="/" element={<Navigate to={PUBLIC_ROUTES.PRODUCTS} replace />} />
-      <Route path="*" element={<Navigate to={PUBLIC_ROUTES.PRODUCTS} replace />} />
+      
+      {/* Página 404 - DEBE IR AL FINAL */}
+      <Route path="*" element={<NotFound />} />
     </Routes>
   );
 };

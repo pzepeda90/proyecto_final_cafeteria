@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import MesasService from '../../services/mesasService';
 import { showError, showSuccess } from '../../services/notificationService';
 import '../../styles/pos.css';
@@ -13,28 +13,50 @@ const MesaSelector = ({ selectedMesa, onMesaSelect, disabled = false, compact = 
   useEffect(() => {
     loadMesas();
     
-    // Configurar polling más inteligente para sincronización en tiempo real
+    // Configurar polling automático con intervalo más largo
     const interval = setInterval(() => {
-      // Solo recargar si no se ha actualizado recientemente (últimos 5 segundos)
       const now = new Date().getTime();
-      if (!lastUpdateRef.current || (now - lastUpdateRef.current) > 5000) {
+      if (!lastUpdateRef.current || (now - lastUpdateRef.current) > 30000) {
         console.log('Polling: Actualizando mesas automáticamente');
         loadMesas();
       } else {
         console.log('Polling: Salteando actualización por cambio reciente');
       }
-    }, 30000); // Actualizar cada 30 segundos
+    }, 180000); // Actualizar cada 3 minutos para reducir conflictos
+    
+    console.log('✅ POLLING AUTOMÁTICO REACTIVADO - Cada 3 minutos');
     
     return () => clearInterval(interval);
-  }, []); // Remover lastUpdate de las dependencias para evitar loop infinito
+  }, []);
 
   // Función para refrescar externamente (cuando se crean pedidos)
+  const refreshMesas = useCallback(() => {
+    console.log('🔄 REFRESH EXTERNO SOLICITADO desde POS');
+    console.log('🔄 Timestamp del refresh:', new Date().toISOString());
+    loadMesas();
+  }, []);
+
+  // Efecto para manejar refreshes externos
   useEffect(() => {
-    if (externalRefresh) {
-      console.log('Refrescando mesas por solicitud externa...');
-      loadMesas();
+    if (externalRefresh > 0) {
+      console.log(`🔄 TRIGGER RECIBIDO: ${externalRefresh} - Ejecutando refresh...`);
+      console.log('🔄 Timestamp del trigger:', new Date().toISOString());
+      refreshMesas();
     }
-  }, [externalRefresh]);
+  }, [externalRefresh, refreshMesas]);
+
+  // Efecto para monitorear cambios importantes en el estado de mesas
+  useEffect(() => {
+    if (mesas.length > 0) {
+      const mesasOcupadas = mesas.filter(m => m.estado === 'ocupada' || m.pedido_activo);
+      if (mesasOcupadas.length > 0) {
+        console.log('📊 MESAS OCUPADAS/CON PEDIDOS:');
+        mesasOcupadas.forEach(m => {
+          console.log(`   Mesa ${m.numero}: Estado=${m.estado}, Pedido=${m.pedido_activo ? 'ID:' + m.pedido_activo.pedido_id : 'NO'}`);
+        });
+      }
+    }
+  }, [mesas]);
 
   // Cleanup de timeouts al desmontar
   useEffect(() => {
@@ -48,13 +70,18 @@ const MesaSelector = ({ selectedMesa, onMesaSelect, disabled = false, compact = 
   const loadMesas = async () => {
     try {
       setLoading(true);
-      console.log('Cargando mesas desde el servidor...');
+      console.log('🔄 Cargando mesas desde el servidor...');
       
       let mesasData;
       try {
         // Intentar usar el endpoint que incluye información de pedidos activos
         mesasData = await MesasService.getMesasConPedidos();
-        console.log('Mesas recibidas del servidor (con pedidos):', mesasData);
+        console.log('📋 Mesas recibidas del servidor (con pedidos):', mesasData.length, 'mesas');
+        console.log('📋 Detalle de mesas ocupadas:', mesasData.filter(m => m.estado === 'ocupada').map(m => ({
+          numero: m.numero,
+          estado: m.estado,
+          pedidos: m.Pedidos?.length || 0
+        })));
         
         // Procesar las mesas para determinar el estado real basado en pedidos activos
         const mesasConEstadoActualizado = mesasData.map(mesa => {
@@ -68,14 +95,11 @@ const MesaSelector = ({ selectedMesa, onMesaSelect, disabled = false, compact = 
             estadoReal = 'ocupada';
           } else {
             // Si no tiene pedidos activos, usar el estado de la mesa
-            // Pero si está marcada como ocupada sin pedidos, ponerla disponible
-            estadoReal = mesa.estado === 'ocupada' ? 'disponible' : mesa.estado;
+            estadoReal = mesa.estado;
           }
           
           if (tienePedidoActivo) {
             console.log(`Mesa ${mesa.numero} tiene pedido activo:`, mesa.Pedidos[0]);
-          } else if (mesa.estado === 'ocupada') {
-            console.log(`Mesa ${mesa.numero} estaba ocupada pero sin pedidos activos - cambiando a disponible`);
           }
           
           return {
@@ -85,13 +109,26 @@ const MesaSelector = ({ selectedMesa, onMesaSelect, disabled = false, compact = 
           };
         });
         
-        console.log('Mesas procesadas:', mesasConEstadoActualizado.map(m => ({
-          numero: m.numero,
-          estado: m.estado,
-          tienePedido: !!m.pedido_activo
-        })));
+        console.log('✅ Mesas procesadas:');
+        mesasConEstadoActualizado.forEach(m => {
+          console.log(`   Mesa ${m.numero}: ${m.estado} ${m.pedido_activo ? '(CON PEDIDO)' : '(SIN PEDIDO)'}`);
+          if (m.pedido_activo) {
+            console.log(`     - Pedido ID: ${m.pedido_activo.pedido_id}, Estado: ${m.pedido_activo.EstadoPedido?.nombre || 'N/A'}`);
+            console.log(`     - Cliente: ${m.pedido_activo.Usuario ? `${m.pedido_activo.Usuario.nombre} ${m.pedido_activo.Usuario.apellido}` : 'N/A'}`);
+          }
+        });
         
+        // Actualizar directamente sin preservar cambios manuales para evitar conflictos
         setMesas(mesasConEstadoActualizado);
+        console.log('🔄 Estado de mesas actualizado en componente');
+        
+        // Log inmediato del nuevo estado
+        setTimeout(() => {
+          console.log('📊 ESTADO FINAL DE MESAS EN COMPONENTE:');
+          mesasConEstadoActualizado.forEach(m => {
+            console.log(`   Mesa ${m.numero}: ${m.estado} ${m.pedido_activo ? '(CON PEDIDO)' : '(SIN PEDIDO)'}`);
+          });
+        }, 100);
         
       } catch (pedidosError) {
         console.warn('Error al cargar mesas con pedidos, usando endpoint básico:', pedidosError);
@@ -111,47 +148,42 @@ const MesaSelector = ({ selectedMesa, onMesaSelect, disabled = false, compact = 
     }
   };
 
-  const handleEstadoChange = async (mesa, nuevoEstado, e) => {
-    e.stopPropagation();
-    e.preventDefault();
+  const handleEstadoChange = async (mesa, nuevoEstado) => {
+    console.log(`🔄 INICIO - Mesa ${mesa.numero}: Cambiando estado de ${mesa.estado} -> ${nuevoEstado}`);
+    console.log(`🔄 Mesa ${mesa.numero}: Mesa ID: ${mesa.mesa_id}`);
     
     try {
-      console.log(`Cambiando estado de mesa ${mesa.mesa_id} de ${mesa.estado} a ${nuevoEstado}`);
+      // Actualizar estado local inmediatamente para feedback visual
+      const mesasActualizadas = mesas.map(m => 
+        m.mesa_id === mesa.mesa_id ? { ...m, estado: nuevoEstado } : m
+      );
+      setMesas(mesasActualizadas);
+      console.log(`✅ Mesa ${mesa.numero}: Estado local actualizado a ${nuevoEstado}`);
       
-      // Actualizar el estado en el backend PRIMERO
-      const response = await MesasService.updateEstadoMesa(mesa.mesa_id, nuevoEstado);
-      console.log('Mesa actualizada en backend:', response);
+             // Llamar al backend para persistir el cambio
+       console.log(`🌐 Mesa ${mesa.numero}: Enviando petición al backend...`);
+       const response = await MesasService.updateEstadoMesa(mesa.mesa_id, nuevoEstado);
+       console.log(`✅ Mesa ${mesa.numero}: Respuesta del backend:`, response);
       
-      // Verificar que la respuesta del backend tenga la mesa actualizada
-      const mesaActualizada = response.mesa || response;
-      if (!mesaActualizada || mesaActualizada.estado !== nuevoEstado) {
-        throw new Error('La mesa no se actualizó correctamente en el servidor');
-      }
-      
-      // Mostrar mensaje de éxito
-      showSuccess(`Mesa ${mesa.numero} ${nuevoEstado === 'ocupada' ? 'ocupada' : 
-                   nuevoEstado === 'disponible' ? 'liberada' : 
-                   nuevoEstado === 'reservada' ? 'reservada' : 
-                   'puesta fuera de servicio'} exitosamente`);
-      
-      // Actualizar el estado local con los datos del servidor
-      console.log(`Actualizando estado local: Mesa ${mesa.numero} de ${mesa.estado} a ${nuevoEstado}`);
-      setMesas(prevMesas => {
-        const updatedMesas = prevMesas.map(m => 
-          m.mesa_id === mesa.mesa_id 
-            ? { 
-                ...m, 
-                estado: mesaActualizada.estado,
-                updated_at: mesaActualizada.updated_at || new Date().toISOString()
-              }
-            : m
-        );
-        console.log('Estado local actualizado:', updatedMesas.find(m => m.mesa_id === mesa.mesa_id));
-        return updatedMesas;
-      });
+             // Verificar que la respuesta del backend coincida
+       if (response && response.mesa && response.mesa.estado === nuevoEstado) {
+         console.log(`✅ Mesa ${mesa.numero}: Backend confirmó el cambio a ${nuevoEstado}`);
+       } else {
+         console.error(`❌ Mesa ${mesa.numero}: Backend NO confirmó el cambio. Respuesta:`, response);
+         console.log(`🔍 Mesa ${mesa.numero}: Estado esperado: ${nuevoEstado}, Estado recibido: ${response?.mesa?.estado}`);
+       }
       
       // Actualizar timestamp para evitar conflictos con polling
       lastUpdateRef.current = new Date().getTime();
+      
+      // Si se liberó una mesa, hacer UN refresh después de 2 segundos para confirmar
+      if (nuevoEstado === 'disponible' && mesa.estado === 'ocupada') {
+        console.log(`🔄 Mesa ${mesa.numero}: Programando refresh de confirmación en 2s...`);
+        setTimeout(() => {
+          console.log(`🔄 Mesa ${mesa.numero}: Ejecutando refresh de confirmación`);
+          loadMesas();
+        }, 2000);
+      }
       
       // Si la mesa seleccionada cambió a un estado no disponible, deseleccionarla
       if (selectedMesa && selectedMesa.mesa_id === mesa.mesa_id && 
@@ -159,17 +191,20 @@ const MesaSelector = ({ selectedMesa, onMesaSelect, disabled = false, compact = 
         onMesaSelect(null);
       }
       
-      // Recargar las mesas solo si hay un problema de sincronización
-      // Eliminar el setTimeout automático para evitar conflictos
+      console.log(`🎉 ÉXITO - Mesa ${mesa.numero}: Proceso completado exitosamente`);
       
     } catch (error) {
-      console.error('Error detallado al cambiar estado de mesa:', error);
-      console.error('Error response:', error.response?.data);
-      showError(`Error al cambiar estado de mesa: ${error.response?.data?.mensaje || error.message}`);
+      console.error(`❌ ERROR - Mesa ${mesa.numero}: Error al cambiar estado:`, error);
       
-      // Solo en caso de error, recargar las mesas para mantener consistencia
-      console.log('Recargando mesas debido a error...');
+      // Revertir cambio local en caso de error
       loadMesas();
+      
+      // Mostrar error al usuario
+      if (error.response?.data?.message) {
+        alert(`Error: ${error.response.data.message}`);
+      } else {
+        alert(`Error al cambiar estado de la mesa: ${error.message}`);
+      }
     }
   };
 
@@ -358,7 +393,7 @@ const MesaSelector = ({ selectedMesa, onMesaSelect, disabled = false, compact = 
                             key={accion.estado}
                             onClick={(e) => {
                               e.stopPropagation();
-                              handleEstadoChange(mesa, accion.estado, e);
+                              handleEstadoChange(mesa, accion.estado);
                             }}
                             className={`
                               w-7 h-7 rounded-md transition-all duration-200 hover:scale-110 active:scale-95
@@ -387,7 +422,7 @@ const MesaSelector = ({ selectedMesa, onMesaSelect, disabled = false, compact = 
                             key={accion.estado}
                             onClick={(e) => {
                               e.stopPropagation();
-                              handleEstadoChange(mesa, accion.estado, e);
+                              handleEstadoChange(mesa, accion.estado);
                             }}
                             className={`
                               px-3 py-2 text-sm rounded-lg transition-all duration-200 hover:scale-105 active:scale-95
@@ -408,6 +443,31 @@ const MesaSelector = ({ selectedMesa, onMesaSelect, disabled = false, compact = 
                   )}
                 </div>
               )}
+
+              {/* Botón de debug temporal */}
+              <div className="absolute top-0 right-0 p-1">
+                <button
+                  onClick={async (e) => {
+                    e.stopPropagation();
+                    try {
+                      const response = await fetch(`http://localhost:3000/api/pedidos?mesa_id=${mesa.mesa_id}`, {
+                        headers: {
+                          'Authorization': `Bearer ${localStorage.getItem('token')}`
+                        }
+                      });
+                      const data = await response.json();
+                      console.log(`🔍 DEBUG Mesa ${mesa.numero} - Pedidos:`, data);
+                      alert(`Mesa ${mesa.numero} tiene ${data.pedidos?.length || 0} pedidos. Ver consola para detalles.`);
+                    } catch (error) {
+                      console.error('Error al obtener pedidos:', error);
+                    }
+                  }}
+                  className="px-2 py-1 bg-blue-500 text-white text-xs rounded hover:bg-blue-600"
+                  title="Ver pedidos de esta mesa"
+                >
+                  🔍
+                </button>
+              </div>
             </div>
           );
         })}
@@ -421,13 +481,19 @@ const MesaSelector = ({ selectedMesa, onMesaSelect, disabled = false, compact = 
       )}
       
       {selectedMesa && (
-        <div className="mt-4 p-3 bg-primary/10 rounded-lg">
-          <p className="text-sm font-medium text-primary">
-            Mesa seleccionada: {selectedMesa.numero} ({selectedMesa.capacidad} personas)
+        <div className="mt-4 p-4 bg-gradient-to-r from-primary/12 to-primary/8 border border-primary/25 rounded-xl shadow-sm">
+          <div className="flex items-center gap-2 justify-center mb-1">
+            <span className="text-base">🪑</span>
+            <p className="text-sm font-semibold text-primary">
+              Mesa Seleccionada: {selectedMesa.numero}
+            </p>
+          </div>
+          <p className="text-xs text-primary/80 text-center mb-2">
+            ({selectedMesa.capacidad} personas)
           </p>
           {selectedMesa.ubicacion && (
-            <p className="text-xs text-gray-600 mt-1">
-              Ubicación: {selectedMesa.ubicacion}
+            <p className="text-xs text-gray-600 text-center">
+              📍 {selectedMesa.ubicacion}
             </p>
           )}
         </div>

@@ -66,22 +66,60 @@
 }
 
 /* Scrollbar personalizado para el carrito */
+.cart-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: #cbd5e1 #f1f5f9;
+  /* Asegurar que el scroll sea suave */
+  scroll-behavior: smooth;
+  /* Mejorar el rendimiento del scroll */
+  -webkit-overflow-scrolling: touch;
+  /* Asegurar que el scroll funcione correctamente */
+  overflow-y: auto !important;
+  overflow-x: hidden;
+  padding-bottom: 0.5rem; /* Padding adicional en el contenedor de scroll */
+}
+
 .cart-scroll::-webkit-scrollbar {
-  width: 6px;
+  width: 8px;
 }
 
 .cart-scroll::-webkit-scrollbar-track {
   background: #f1f5f9;
-  border-radius: 3px;
+  border-radius: 4px;
 }
 
 .cart-scroll::-webkit-scrollbar-thumb {
   background: #cbd5e1;
-  border-radius: 3px;
+  border-radius: 4px;
+  border: 1px solid #f1f5f9;
 }
 
 .cart-scroll::-webkit-scrollbar-thumb:hover {
   background: #94a3b8;
+}
+
+/* Contenedor del carrito - altura normal sin mesas */
+.cart-container {
+  max-height: 200px; /* Altura normal: sin mesas desplegadas (más reducido) */
+  margin-bottom: 0; /* Sin margen inferior para engarce perfecto */
+  overflow-y: auto; /* Scroll cuando exceda la altura */
+}
+
+/* Cuando hay selector de mesa activo, altura reducida */
+.with-mesa-selector .cart-container {
+  max-height: 150px; /* Altura reducida: con mesas desplegadas (más reducido) */
+  margin-bottom: 0; /* Sin margen inferior para engarce perfecto */
+  overflow-y: auto; /* Scroll cuando exceda la altura */
+}
+
+@media (max-width: 768px) {
+  .cart-container {
+    max-height: 250px; /* Mobile: altura normal sin mesas (reducido para evitar superposición) */
+  }
+  
+  .with-mesa-selector .cart-container {
+    max-height: 180px; /* Mobile con mesa: altura reducida (reducido para evitar superposición) */
+  }
 }
 
 /* Estados de carga */
@@ -125,16 +163,79 @@
   line-height: 1.2;
 }
 
-/* Mejora para el carrito con más altura - solo cuando está expandido */
-.cart-container-expanded {
-  /* Altura fija para mostrar aproximadamente 4-5 elementos */
-  min-height: 350px;
-  max-height: 400px;
+/* Transiciones suaves para el carrito */
+.cart-transition {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.cart-container-collapsed {
+/* Estilos mejorados para elementos del carrito - ultra-compactos */
+.cart-item {
+  /* Remover alturas fijas que causan superposición */
   min-height: auto;
-  max-height: 120px;
+  /* Permitir que el contenido determine la altura */
+  height: auto;
+  /* Reducir margen vertical para cards más compactas */
+  margin-bottom: 0.25rem;
+  /* Asegurar posicionamiento normal */
+  position: relative;
+  /* Animación suave al aparecer/desaparecer */
+  transition: all 0.3s ease-in-out;
+  /* Prevenir desbordamiento */
+  overflow: visible;
+}
+
+.cart-item:hover {
+  /* Efecto hover sutil */
+  transform: translateX(1px);
+}
+
+/* Padding ultra-reducido para el contenido interno de cada cart-item */
+.cart-item > div {
+  padding: 0.25rem; /* Padding muy compacto */
+}
+
+/* Ajustar imagen del producto en el carrito - más pequeña */
+.cart-item img,
+.cart-item .product-placeholder {
+  width: 1.75rem; /* Aún más pequeño: de 2.25rem a 1.75rem */
+  height: 1.75rem; /* Aún más pequeño: de 2.25rem a 1.75rem */
+}
+
+/* Header del item más compacto */
+.cart-item .flex.items-center.gap-3 {
+  gap: 0.375rem; /* Reducir gap del header */
+  margin-bottom: 0.25rem; /* Reducir margen inferior */
+}
+
+/* Controles de cantidad más compactos */
+.cart-item .bg-gray-50 {
+  padding: 0.375rem; /* Padding más pequeño en la sección de controles */
+}
+
+/* Botones de cantidad más pequeños */
+.cart-item button {
+  width: 1.25rem; /* Botones más pequeños */
+  height: 1.25rem;
+  font-size: 0.75rem; /* Texto más pequeño */
+}
+
+/* Input de cantidad más compacto */
+.cart-item .w-8 {
+  width: 1.5rem; /* Ancho reducido del input */
+  padding: 0.125rem; /* Padding reducido */
+  font-size: 0.75rem; /* Texto más pequeño */
+}
+
+/* Texto de precio más compacto */
+.cart-item .text-base {
+  font-size: 0.875rem; /* Precio más pequeño */
+}
+
+/* Botón eliminar más pequeño */
+.cart-item .w-6.h-6 {
+  width: 1.25rem;
+  height: 1.25rem;
+  font-size: 0.75rem;
 }
 
 /* Mejoras para dispositivos móviles */
@@ -154,15 +255,9 @@
     font-size: 8px;
   }
   
-  /* Carrito más compacto en móviles */
-  .cart-container-expanded {
-    min-height: 300px;
-    max-height: 350px;
-  }
-  
-  .cart-container-collapsed {
-    min-height: auto;
-    max-height: 100px;
+  /* Elementos del carrito en móviles - sin altura fija */
+  .cart-item {
+    margin-bottom: 0.75rem; /* Más separación en móviles */
   }
 }
 
@@ -337,23 +432,44 @@
   }
 }
 
-/* Mejoras adicionales para el scroll del carrito */
+/* Contenedor de la lista de items del carrito - asegurar layout vertical */
+.cart-items-container {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem; /* Aún más reducido para ultra-compacto */
+}
+
+/* Asegurar que el contenedor padre use flexbox correctamente */
+.cart-scroll > div {
+  display: flex;
+  flex-direction: column;
+  padding-bottom: 0.5rem; /* Reducido aún más */
+}
+
+/* Asegurar que todos los elementos del carrito se apilen verticalmente */
 .cart-scroll {
-  /* Asegurar que el scroll sea suave */
-  scroll-behavior: smooth;
-  /* Mejorar el rendimiento del scroll */
-  -webkit-overflow-scrolling: touch;
+  display: flex;
+  flex-direction: column;
 }
 
-/* Estilo mejorado para los elementos del carrito */
-.cart-item {
-  /* Altura mínima para cada elemento del carrito */
-  min-height: 80px;
-  /* Animación suave al aparecer/desaparecer */
-  transition: all 0.3s ease-in-out;
+/* Cuando hay MesaSelector activo, asegurar mejor distribución del espacio */
+.with-mesa-selector {
+  flex-shrink: 1;
+  min-height: 0; /* Permitir que se contraiga */
 }
 
-.cart-item:hover {
-  /* Efecto hover sutil */
-  transform: translateX(2px);
-} 
+/* Clase utilitaria para espaciado vertical consistente - ultra-compacto */
+.space-y-2 > * + * {
+  margin-top: 0.25rem !important; /* Ultra-compacto */
+}
+
+/* Estilos para botones del carrito mejorados */
+.cart-button {
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  backdrop-filter: blur(4px);
+}
+
+.cart-button:hover {
+  transform: translateY(-1px);
+}
+

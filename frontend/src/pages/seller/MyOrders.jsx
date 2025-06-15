@@ -219,8 +219,14 @@ const MyOrders = () => {
                   <p><span className="font-medium">Cliente:</span> {selectedOrder.clientName}</p>
                   <p><span className="font-medium">Fecha:</span> {new Date(selectedOrder.date).toLocaleString('es-CL')}</p>
                   <p><span className="font-medium">Método de pago:</span> {selectedOrder.paymentMethod}</p>
-                  <p><span className="font-medium">Tipo de entrega:</span> {selectedOrder.deliveryType === 'local' ? 'Retiro en local' : 'Domicilio'}</p>
-                  {selectedOrder.shippingAddress && selectedOrder.deliveryType === 'domicilio' && (
+                  <p><span className="font-medium">Tipo de entrega:</span> {
+                    selectedOrder.deliveryType === 'local' ? 'Retiro en local' :
+                    selectedOrder.deliveryType === 'delivery' ? 'Delivery' :
+                    selectedOrder.deliveryType === 'takeaway' ? 'Para llevar' :
+                    selectedOrder.deliveryType === 'dine_in' ? 'Consumo en el local' :
+                    'Retiro en local'
+                  }</p>
+                  {selectedOrder.shippingAddress && selectedOrder.deliveryType === 'delivery' && (
                     <p><span className="font-medium">Dirección:</span> {selectedOrder.shippingAddress}</p>
                   )}
                 </div>

@@ -12,7 +12,7 @@ const store = configureStore({
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware().concat(api.middleware),
-  devTools: import.meta.env.DEV,
+  devTools: typeof process !== 'undefined' && process.env.NODE_ENV !== 'production',
 });
 
 setupListeners(store.dispatch);

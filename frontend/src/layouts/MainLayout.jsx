@@ -12,7 +12,7 @@ const MainLayout = () => {
       <Navbar />
       <div className="flex-grow flex">
         {isAuthenticated && <Sidebar />}
-        <main className="flex-1 p-8 bg-gray-50">
+        <main className="flex-1 bg-gray-50">
           <Outlet />
         </main>
       </div>

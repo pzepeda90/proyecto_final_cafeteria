@@ -30,6 +30,15 @@ const tabOptions = [
   { key: 'MESAS', label: 'Mesas' },
 ];
 
+// Opciones de filtro para mesas
+const mesaFilterOptions = [
+  { key: 'TODAS', label: 'Todas', color: 'bg-gray-100 text-gray-800' },
+  { key: 'LIBRES', label: 'Libres', color: 'bg-green-100 text-green-800' },
+  { key: 'OCUPADAS', label: 'Ocupadas', color: 'bg-red-100 text-red-800' },
+  { key: 'RESERVADAS', label: 'Reservadas', color: 'bg-blue-100 text-blue-800' },
+  { key: 'INABILITADAS', label: 'Inabilitadas', color: 'bg-yellow-100 text-yellow-800' },
+];
+
 const UsersManagement = () => {
   const [users, setUsers] = useState(mockUsers);
   const [mesas, setMesas] = useState([]);
@@ -41,51 +50,67 @@ const UsersManagement = () => {
   const [userToDelete, setUserToDelete] = useState(null);
   const [mesaToDelete, setMesaToDelete] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [mesaFilter, setMesaFilter] = useState('TODAS'); // Filtro para mesas
 
-  // Función de diagnóstico
-  const diagnoseBackend = () => {
-    console.log('=== DIAGNÓSTICO DEL SISTEMA ===');
-    console.log('Token en localStorage:', localStorage.getItem('token') ? 'Presente' : 'Ausente');
-    console.log('Token en sessionStorage:', sessionStorage.getItem('token') ? 'Presente' : 'Ausente');
-    console.log('Usuario actual:', JSON.parse(localStorage.getItem('user') || sessionStorage.getItem('user') || 'null'));
-    console.log('URL base de API:', import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api');
+  // Función para determinar el estado de una mesa
+  const getMesaEstado = (mesa) => {
+    // La mesa tiene un campo estado en la base de datos
+    if (mesa.estado) {
+      // Mapear los estados de la BD a nuestros filtros
+      const estadoMap = {
+        'disponible': 'LIBRES',
+        'ocupada': 'OCUPADAS',
+        'reservada': 'RESERVADAS',
+        'fuera_servicio': 'INABILITADAS'
+      };
+      return estadoMap[mesa.estado] || 'LIBRES';
+    }
     
-    // Intentar hacer un ping al backend
-    fetch('http://localhost:3000/api/vendedores', {
-      method: 'GET',
-      headers: {
-        'Authorization': `Bearer ${localStorage.getItem('token') || sessionStorage.getItem('token')}`,
-        'Content-Type': 'application/json'
-      }
-    })
-    .then(response => {
-      console.log('Status de conexión al backend:', response.status);
-      if (!response.ok) {
-        console.log('Error de respuesta:', response.statusText);
-      }
-      return response.text();
-    })
-    .then(data => {
-      console.log('Respuesta del backend:', data);
-    })
-    .catch(error => {
-      console.error('Error de conexión al backend:', error);
-    });
+    return 'LIBRES'; // Por defecto
   };
+
+  // Función para obtener el estilo del estado
+  const getMesaEstadoStyle = (estado) => {
+    const styles = {
+      'LIBRES': 'bg-green-100 text-green-800',
+      'OCUPADAS': 'bg-red-100 text-red-800', 
+      'RESERVADAS': 'bg-blue-100 text-blue-800',
+      'INABILITADAS': 'bg-yellow-100 text-yellow-800'
+    };
+    return styles[estado] || 'bg-gray-100 text-gray-800';
+  };
+
+  // Función para obtener el texto del estado
+  const getMesaEstadoText = (estado) => {
+    const texts = {
+      'LIBRES': 'Libre',
+      'OCUPADAS': 'Ocupada',
+      'RESERVADAS': 'Reservada', 
+      'INABILITADAS': 'Inabilitada'
+    };
+    return texts[estado] || 'Desconocido';
+  };
+
+
 
   // Cargar mesas
   const loadMesas = async () => {
     try {
       const mesasData = await AdminService.getMesas();
-      setMesas(mesasData);
+      // Ordenar las mesas por número antes de guardarlas en el estado
+      const mesasOrdenadas = mesasData.sort((a, b) => {
+        const numA = parseInt(a.numero) || 0;
+        const numB = parseInt(b.numero) || 0;
+        return numA - numB;
+      });
+      setMesas(mesasOrdenadas);
     } catch (error) {
       console.error('Error al cargar mesas:', error);
     }
   };
 
-  // Ejecutar diagnóstico al cargar el componente
+  // Cargar datos al cambiar de tab
   useEffect(() => {
-    diagnoseBackend();
     if (activeTab === 'MESAS') {
       loadMesas();
     }
@@ -102,14 +127,25 @@ const UsersManagement = () => {
     return matchesRole && matchesSearch;
   });
 
-  const filteredMesas = mesas.filter(mesa => {
-    const matchesSearch = search
-      ? mesa.numero.toString().includes(search.toLowerCase()) ||
-        mesa.ubicacion?.toLowerCase().includes(search.toLowerCase()) ||
-        mesa.capacidad.toString().includes(search.toLowerCase())
-      : true;
-    return matchesSearch;
-  });
+  const filteredMesas = mesas
+    .filter(mesa => {
+      const matchesSearch = search
+        ? mesa.numero.toString().includes(search.toLowerCase()) ||
+          mesa.ubicacion?.toLowerCase().includes(search.toLowerCase()) ||
+          mesa.capacidad.toString().includes(search.toLowerCase())
+        : true;
+      
+      // Filtrar por estado
+      const matchesFilter = mesaFilter === 'TODAS' || getMesaEstado(mesa) === mesaFilter;
+      
+      return matchesSearch && matchesFilter;
+    })
+    .sort((a, b) => {
+      // Ordenar por número de mesa de forma ascendente
+      const numA = parseInt(a.numero) || 0;
+      const numB = parseInt(b.numero) || 0;
+      return numA - numB;
+    });
 
   // Abrir modal para crear/editar
   const handleOpenModal = (item = null) => {
@@ -121,7 +157,7 @@ const UsersManagement = () => {
           numero: '',
           capacidad: 4,
           ubicacion: '',
-          disponible: true
+          estado: 'disponible'
         });
       }
     } else {
@@ -153,11 +189,25 @@ const UsersManagement = () => {
         if (data.mesa_id) {
           // Editar mesa existente
           await AdminService.updateMesa(data.mesa_id, data);
-          setMesas(mesas.map(m => m.mesa_id === data.mesa_id ? { ...m, ...data } : m));
+          const mesasActualizadas = mesas.map(m => m.mesa_id === data.mesa_id ? { ...m, ...data } : m);
+          // Reordenar después de la edición
+          mesasActualizadas.sort((a, b) => {
+            const numA = parseInt(a.numero) || 0;
+            const numB = parseInt(b.numero) || 0;
+            return numA - numB;
+          });
+          setMesas(mesasActualizadas);
         } else {
           // Crear nueva mesa
           const response = await AdminService.createMesa(data);
-          setMesas([...mesas, response]);
+          const nuevasMesas = [...mesas, response];
+          // Ordenar después de agregar la nueva mesa
+          nuevasMesas.sort((a, b) => {
+            const numA = parseInt(a.numero) || 0;
+            const numB = parseInt(b.numero) || 0;
+            return numA - numB;
+          });
+          setMesas(nuevasMesas);
         }
         setEditMesa(null);
       } else {
@@ -254,13 +304,6 @@ const UsersManagement = () => {
 
   return (
     <div className="p-3 sm:p-6">
-      {/* Botón de diagnóstico para debugging */}
-      <div className="mb-4">
-        <Button size="sm" variant="secondary" onClick={diagnoseBackend}>
-          🔍 Diagnosticar Sistema
-        </Button>
-      </div>
-
       {/* Tabs */}
       <div className="mb-4 flex gap-1 sm:gap-2 border-b overflow-x-auto">
         {tabOptions.map(tab => (
@@ -269,7 +312,11 @@ const UsersManagement = () => {
             className={`px-2 sm:px-4 py-2 font-semibold border-b-2 transition-colors duration-200 whitespace-nowrap text-sm sm:text-base ${
               activeTab === tab.key ? 'border-primary text-primary' : 'border-transparent text-gray-500 hover:text-primary'
             }`}
-            onClick={() => { setActiveTab(tab.key); setSearch(''); }}
+            onClick={() => { 
+              setActiveTab(tab.key); 
+              setSearch(''); 
+              setMesaFilter('TODAS'); // Reiniciar filtro de mesas
+            }}
           >
             {tab.label}
           </button>
@@ -298,6 +345,26 @@ const UsersManagement = () => {
             + Nueva {activeTab === 'MESAS' ? 'Mesa' : (roles.find(r => r.key === activeTab)?.label || 'Item')}
           </Button>
         </div>
+
+        {/* Filtros de estado para mesas */}
+        {activeTab === 'MESAS' && (
+          <div className="flex flex-wrap gap-2">
+            <span className="text-sm font-medium text-gray-700 self-center">Filtrar por estado:</span>
+            {mesaFilterOptions.map(option => (
+              <button
+                key={option.key}
+                onClick={() => setMesaFilter(option.key)}
+                className={`px-3 py-1 text-xs font-semibold rounded-full transition-all duration-200 ${
+                  mesaFilter === option.key
+                    ? option.color + ' ring-2 ring-primary ring-opacity-50'
+                    : 'bg-gray-100 text-gray-600 hover:' + option.color
+                }`}
+              >
+                {option.label}
+              </button>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Tabla responsiva */}
@@ -320,9 +387,9 @@ const UsersManagement = () => {
                         )}
                       </div>
                       <span className={`px-2 py-1 text-xs font-semibold rounded-full ${
-                        mesa.disponible ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                        getMesaEstadoStyle(getMesaEstado(mesa))
                       }`}>
-                        {mesa.disponible ? 'Disponible' : 'Ocupada'}
+                        {getMesaEstadoText(getMesaEstado(mesa))}
                       </span>
                     </div>
                     <div className="flex gap-2">
@@ -376,9 +443,9 @@ const UsersManagement = () => {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                          mesa.disponible ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                          getMesaEstadoStyle(getMesaEstado(mesa))
                         }`}>
-                          {mesa.disponible ? 'Disponible' : 'Ocupada'}
+                          {getMesaEstadoText(getMesaEstado(mesa))}
                         </span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
@@ -562,18 +629,22 @@ const UsersManagement = () => {
                 />
               </div>
               
-              {/* Estado disponible */}
-              <div className="flex items-center">
-                <input
-                  type="checkbox"
-                  id="disponible"
-                  checked={editMesa?.disponible !== false}
-                  onChange={e => setEditMesa({ ...editMesa, disponible: e.target.checked })}
-                  className="h-4 w-4 text-primary focus:ring-primary border-gray-300 rounded"
-                />
-                <label htmlFor="disponible" className="ml-2 block text-sm text-gray-900">
-                  Mesa disponible
+              {/* Estado de la mesa */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Estado *
                 </label>
+                <select
+                  className="w-full px-3 sm:px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-primary focus:border-transparent text-sm sm:text-base"
+                  value={editMesa?.estado || 'disponible'}
+                  onChange={e => setEditMesa({ ...editMesa, estado: e.target.value })}
+                  required
+                >
+                  <option value="disponible">Disponible</option>
+                  <option value="ocupada">Ocupada</option>
+                  <option value="reservada">Reservada</option>
+                  <option value="fuera_servicio">Fuera de Servicio</option>
+                </select>
               </div>
             </>
           ) : (

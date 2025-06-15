@@ -9,10 +9,10 @@ const variants = {
   success:
     'bg-green-600 text-white hover:bg-green-700 focus:ring-green-500',
   danger:
-    'bg-red-600 text-white hover:bg-red-700 focus:ring-red-500',
+    'bg-primary-600 text-white hover:bg-primary-700 focus:ring-primary-500',
   warning:
     'bg-yellow-500 text-white hover:bg-yellow-600 focus:ring-yellow-500',
-  info: 'bg-blue-600 text-white hover:bg-blue-700 focus:ring-blue-500',
+  info: 'bg-primary-500 text-white hover:bg-primary-600 focus:ring-primary-500',
   light:
     'bg-gray-100 text-gray-800 hover:bg-gray-200 focus:ring-gray-500',
   dark: 'bg-gray-800 text-white hover:bg-gray-900 focus:ring-gray-500',

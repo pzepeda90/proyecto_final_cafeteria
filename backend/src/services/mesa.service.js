@@ -1,4 +1,5 @@
 const { Mesa } = require('../models/orm');
+const { clearMesasCache } = require('../utils/cache');
 
 class MesaService {
   /**
@@ -98,35 +99,86 @@ class MesaService {
       try {
         // Si la mesa se está liberando (poniendo disponible), marcar pedidos como entregados
         if (estado === 'disponible' && mesaExistente.estado !== 'disponible') {
+          console.log(`🔄 Mesa ${id}: Liberando mesa que estaba ${mesaExistente.estado} -> disponible`);
           const { Pedido, EstadoPedido } = require('../models/orm');
+          const { Op } = require('sequelize');
           
-          // Buscar estado "Entregado"
+          // Buscar estados "Entregado" y "Cancelado"
           const estadoEntregado = await EstadoPedido.findOne({
             where: { nombre: 'Entregado' },
             transaction
           });
           
-          if (estadoEntregado) {
-            // Actualizar pedidos activos de esta mesa a "Entregado"
-            const pedidosActualizados = await Pedido.update(
-              { estado_pedido_id: estadoEntregado.estado_pedido_id },
-              {
+          const estadoCancelado = await EstadoPedido.findOne({
+            where: { nombre: 'Cancelado' },
+            transaction
+          });
+          
+          if (!estadoEntregado) {
+            console.error(`❌ Mesa ${id}: No se encontró estado 'Entregado' en la base de datos`);
+          } else {
+            console.log(`📋 Mesa ${id}: Estado 'Entregado' encontrado con ID: ${estadoEntregado.estado_pedido_id}`);
+            console.log(`📋 Mesa ${id}: Buscando pedidos activos para marcar como entregados...`);
+            
+            // Estados finales para excluir
+            const estadosFinales = [estadoEntregado.estado_pedido_id];
+            if (estadoCancelado) {
+              estadosFinales.push(estadoCancelado.estado_pedido_id);
+              console.log(`📋 Mesa ${id}: Estado 'Cancelado' encontrado con ID: ${estadoCancelado.estado_pedido_id}`);
+            }
+            
+            // Primero, ver qué pedidos hay activos
+            const pedidosActivos = await Pedido.findAll({
+              where: {
+                mesa_id: id,
+                estado_pedido_id: {
+                  [Op.notIn]: estadosFinales
+                }
+              },
+              include: [{ model: EstadoPedido, attributes: ['nombre'] }],
+              transaction
+            });
+            
+            console.log(`📋 Mesa ${id}: Encontrados ${pedidosActivos.length} pedidos activos:`);
+            pedidosActivos.forEach(p => {
+              console.log(`   - Pedido ID: ${p.pedido_id}, Estado actual: ${p.EstadoPedido?.nombre || 'N/A'} (ID: ${p.estado_pedido_id})`);
+            });
+            
+            if (pedidosActivos.length > 0) {
+              // Actualizar pedidos activos de esta mesa a "Entregado"
+              const pedidosActualizados = await Pedido.update(
+                { estado_pedido_id: estadoEntregado.estado_pedido_id },
+                {
+                  where: {
+                    mesa_id: id,
+                    estado_pedido_id: {
+                      [Op.notIn]: estadosFinales
+                    }
+                  },
+                  transaction
+                }
+              );
+              
+              console.log(`✅ Mesa ${id}: ${pedidosActualizados[0]} pedidos actualizados a 'Entregado'`);
+              
+              // Verificar que se actualizaron correctamente
+              const pedidosVerificacion = await Pedido.findAll({
                 where: {
                   mesa_id: id,
                   estado_pedido_id: {
-                    [require('sequelize').Op.notIn]: [
-                      // Excluir pedidos ya entregados o cancelados
-                      estadoEntregado.estado_pedido_id,
-                      (await EstadoPedido.findOne({ where: { nombre: 'Cancelado' }, transaction }))?.estado_pedido_id
-                    ].filter(Boolean)
+                    [Op.notIn]: estadosFinales
                   }
                 },
                 transaction
+              });
+              
+              if (pedidosVerificacion.length === 0) {
+                console.log(`✅ Mesa ${id}: Verificación exitosa - No quedan pedidos activos`);
+              } else {
+                console.log(`⚠️ Mesa ${id}: ADVERTENCIA - Quedan ${pedidosVerificacion.length} pedidos activos después de la actualización`);
               }
-            );
-            
-            if (pedidosActualizados[0] > 0) {
-              console.log(`Mesa service: ${pedidosActualizados[0]} pedidos marcados como entregados para mesa ${id}`);
+            } else {
+              console.log(`ℹ️ Mesa ${id}: No había pedidos activos para marcar como entregados`);
             }
           }
         }
@@ -155,16 +207,16 @@ class MesaService {
           throw new Error(`Error: Estado no se actualizó correctamente. Esperado: ${estado}, Actual: ${mesaActualizada.estado}`);
         }
         
+        // NOTA: NO ejecutar sincronización automática después de cambio manual
+        // porque puede revertir el cambio si los pedidos no se marcaron correctamente como entregados
+        // La sincronización se ejecuta periódicamente de todas formas
+        
         // Invalidar cache después de actualizar estado
         try {
-          const redisClient = require('../config/redis');
-          if (redisClient) {
-            await redisClient.del('/api/mesas');
-            await redisClient.del('/api/mesas/con-pedidos');
-            console.log('Cache de mesas invalidado después de actualizar estado');
-          }
+          await clearMesasCache();
+          console.log(`🔥 Cache de mesas COMPLETAMENTE limpiado después de actualizar mesa ${id}`);
         } catch (cacheError) {
-          console.warn('Error al invalidar cache:', cacheError);
+          console.warn('Error al limpiar cache:', cacheError);
         }
         
         return mesaActualizada;
@@ -299,14 +351,10 @@ class MesaService {
       // Invalidar cache si se sincronizaron mesas
       if (mesasSincronizadas > 0) {
         try {
-          const redisClient = require('../config/redis');
-          if (redisClient) {
-            await redisClient.del('/api/mesas');
-            await redisClient.del('/api/mesas/con-pedidos');
-            console.log('Cache de mesas invalidado después de sincronización');
-          }
+          await clearMesasCache();
+          console.log('Cache de mesas completamente limpiado después de sincronización');
         } catch (cacheError) {
-          console.warn('Error al invalidar cache:', cacheError);
+          console.warn('Error al limpiar cache:', cacheError);
         }
       }
       
@@ -326,9 +374,18 @@ class MesaService {
     try {
       // Sincronizar estados antes de consultar
       await this.sincronizarEstadosMesas();
+      console.log('✅ SINCRONIZACIÓN AUTOMÁTICA REACTIVADA');
       
       const { Pedido, Usuario, EstadoPedido } = require('../models/orm');
       const { Op } = require('sequelize');
+      
+      // Obtener IDs de estados finales ANTES de la consulta principal
+      const estadosFinales = await EstadoPedido.findAll({
+        where: { nombre: { [Op.in]: ['Entregado', 'Cancelado'] } },
+        attributes: ['estado_pedido_id']
+      }).then(estados => estados.map(e => e.estado_pedido_id));
+      
+      console.log('🔍 Estados finales encontrados:', estadosFinales);
       
       const mesas = await Mesa.findAll({
         where: { activa: true },
@@ -337,26 +394,24 @@ class MesaService {
           required: false,
           where: {
             estado_pedido_id: {
-              [Op.notIn]: await EstadoPedido.findAll({
-                where: { nombre: { [Op.in]: ['Entregado', 'Cancelado'] } },
-                attributes: ['estado_pedido_id']
-              }).then(estados => estados.map(e => e.estado_pedido_id))
+              [Op.notIn]: estadosFinales
             }
           },
           include: [
-            { 
-              model: Usuario, 
-              attributes: ['nombre', 'apellido'] 
-            },
-            { 
-              model: EstadoPedido,
-              attributes: ['nombre', 'descripcion']
-            }
-          ],
-          order: [['fecha_pedido', 'DESC']],
-          limit: 1
+            { model: Usuario, attributes: ['nombre', 'apellido'] },
+            { model: EstadoPedido, attributes: ['nombre'] }
+          ]
         }],
         order: [['numero', 'ASC']]
+      });
+      
+      console.log(`🔍 CONSULTA MESAS CON PEDIDOS - Encontradas ${mesas.length} mesas:`);
+      mesas.forEach(mesa => {
+        const pedidosActivos = mesa.Pedidos || [];
+        console.log(`   Mesa ${mesa.numero}: ${pedidosActivos.length} pedidos activos`);
+        pedidosActivos.forEach(pedido => {
+          console.log(`     - Pedido ID: ${pedido.pedido_id}, Mesa ID: ${pedido.mesa_id}, Estado: ${pedido.EstadoPedido?.nombre}`);
+        });
       });
       
       const mesasConPedidos = mesas.filter(mesa => mesa.Pedidos && mesa.Pedidos.length > 0);

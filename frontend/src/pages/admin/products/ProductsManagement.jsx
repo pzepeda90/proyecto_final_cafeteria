@@ -474,7 +474,7 @@ const ProductsManagement = () => {
               e.preventDefault();
               handleSaveProduct(editProduct);
             }}
-            className="space-y-6 max-h-[70vh] overflow-y-auto pr-2"
+            className="space-y-6 max-h-[70vh] overflow-y-auto px-1"
           >
           {/* Nombre y Categoría */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -484,7 +484,7 @@ const ProductsManagement = () => {
               </label>
               <input
                 type="text"
-                className="w-full px-3 sm:px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-primary focus:border-transparent text-sm sm:text-base"
+                className="w-full px-3 py-2 rounded-lg border border-gray-300 focus:ring-1 focus:ring-primary focus:border-primary text-sm"
                 value={editProduct?.name || ''}
                 onChange={(e) => setEditProduct({ ...editProduct, name: e.target.value })}
                 required
@@ -495,7 +495,7 @@ const ProductsManagement = () => {
                 Categoría *
               </label>
               <select
-                className="w-full px-3 sm:px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-primary focus:border-transparent text-sm sm:text-base"
+                className="w-full px-3 py-2 rounded-lg border border-gray-300 focus:ring-1 focus:ring-primary focus:border-primary text-sm"
                 value={editProduct?.category_id || ''}
                 onChange={(e) => setEditProduct({ ...editProduct, category_id: e.target.value })}
                 required
@@ -516,7 +516,7 @@ const ProductsManagement = () => {
               Descripción *
             </label>
             <textarea
-              className="w-full px-3 sm:px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-primary focus:border-transparent text-sm sm:text-base"
+              className="w-full px-3 py-2 rounded-lg border border-gray-300 focus:ring-1 focus:ring-primary focus:border-primary text-sm resize-none"
               rows="3"
               value={editProduct?.description || ''}
               onChange={(e) => setEditProduct({ ...editProduct, description: e.target.value })}
@@ -534,7 +534,7 @@ const ProductsManagement = () => {
                 type="number"
                 step="0.01"
                 min="0"
-                className="w-full px-3 sm:px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-primary focus:border-transparent text-sm sm:text-base"
+                className="w-full px-3 py-2 rounded-lg border border-gray-300 focus:ring-1 focus:ring-primary focus:border-primary text-sm"
                 value={editProduct?.price || ''}
                 onChange={(e) => setEditProduct({ ...editProduct, price: e.target.value })}
                 required
@@ -547,7 +547,7 @@ const ProductsManagement = () => {
               <input
                 type="number"
                 min="0"
-                className="w-full px-3 sm:px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-primary focus:border-transparent text-sm sm:text-base"
+                className="w-full px-3 py-2 rounded-lg border border-gray-300 focus:ring-1 focus:ring-primary focus:border-primary text-sm"
                 value={editProduct?.stock || 0}
                 onChange={(e) => setEditProduct({ ...editProduct, stock: e.target.value })}
               />
@@ -561,7 +561,7 @@ const ProductsManagement = () => {
             </label>
             <input
               type="url"
-              className="w-full px-3 sm:px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-primary focus:border-transparent text-sm sm:text-base"
+              className="w-full px-3 py-2 rounded-lg border border-gray-300 focus:ring-1 focus:ring-primary focus:border-primary text-sm"
               value={editProduct?.image || ''}
               onChange={(e) => setEditProduct({ ...editProduct, image: e.target.value })}
               placeholder="https://ejemplo.com/imagen.jpg"

@@ -84,8 +84,8 @@ const Register = () => {
   };
 
   return (
-    <div className="max-w-md mx-auto bg-white rounded-lg shadow-md overflow-hidden">
-      <div className="px-6 py-8">
+    <div className="max-w-md mx-auto bg-white rounded-lg shadow-md overflow-hidden mx-4">
+      <div className="px-6 py-8 sm:px-8">
         <h2 className="text-3xl font-bold text-center text-gray-800 mb-8">
           Crear Cuenta
         </h2>

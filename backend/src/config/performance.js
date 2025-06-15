@@ -106,8 +106,15 @@ const cacheMiddleware = (ttl = 300) => {
       return next();
     }
 
+    // Excluir rutas de reseñas del cache (datos en tiempo real)
+    const url = req.originalUrl || req.url;
+    if (url.includes('/resenas') || url.includes('/productos/') && url.includes('/resenas')) {
+      console.log(`⚡ NO-CACHE: ${url} (reseñas en tiempo real)`);
+      return next();
+    }
+
     // Crear clave única basada en URL y query params
-    const key = `${req.originalUrl || req.url}`;
+    const key = url;
     
     // Intentar obtener del cache
     const cachedResponse = cache.get(key);
@@ -145,6 +152,28 @@ const clearCachePattern = (pattern) => {
   
   console.log(`🗑️ Cache cleared: ${matchingKeys.length} keys matching "${pattern}"`);
   return matchingKeys.length;
+};
+
+// Función específica para limpiar cache de reseñas
+const clearResenasNodeCache = (productoId = null) => {
+  const keys = cache.keys();
+  let patterns = ['resenas'];
+  
+  if (productoId) {
+    patterns.push(`productos/${productoId}/resenas`);
+  }
+  
+  let clearedCount = 0;
+  patterns.forEach(pattern => {
+    const matchingKeys = keys.filter(key => key.includes(pattern));
+    matchingKeys.forEach(key => {
+      cache.del(key);
+      clearedCount++;
+    });
+  });
+  
+  console.log(`🗑️ NodeCache reseñas cleared: ${clearedCount} keys`);
+  return clearedCount;
 };
 
 // Estadísticas del cache
@@ -383,6 +412,7 @@ module.exports = {
   cache,
   cacheMiddleware,
   clearCachePattern,
+  clearResenasNodeCache,
   getCacheStats,
   clearAllCache,
   compressionMiddleware,

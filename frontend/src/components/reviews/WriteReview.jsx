@@ -109,7 +109,7 @@ const WriteReview = ({ productoId, onReviewCreated, producto }) => {
           </p>
           <button
             onClick={() => window.location.href = '/login'}
-            className="bg-blue-600 text-white px-6 py-2 rounded-md hover:bg-blue-700 transition-colors"
+            className="bg-primary-500 text-white px-6 py-2 rounded-md hover:bg-primary-600 transition-colors"
           >
             Iniciar sesión
           </button>
@@ -169,7 +169,7 @@ const WriteReview = ({ productoId, onReviewCreated, producto }) => {
             value={comentario}
             onChange={(e) => setComentario(e.target.value)}
             rows={4}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent resize-none"
             placeholder="Comparte tu experiencia con este producto... ¿Qué te gustó más? ¿Lo recomendarías?"
             maxLength={1000}
           />
@@ -189,7 +189,7 @@ const WriteReview = ({ productoId, onReviewCreated, producto }) => {
         <button
           type="submit"
           disabled={loading || !calificacion}
-          className="w-full flex items-center justify-center space-x-2 bg-blue-600 text-white py-3 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 transform hover:scale-[1.02] active:scale-[0.98]"
+          className="w-full flex items-center justify-center space-x-2 bg-primary-500 text-white py-3 px-4 rounded-md hover:bg-primary-600 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 transform hover:scale-[1.02] active:scale-[0.98]"
         >
           {loading ? (
             <>
@@ -206,8 +206,8 @@ const WriteReview = ({ productoId, onReviewCreated, producto }) => {
       </form>
 
       {/* Información adicional */}
-      <div className="mt-4 p-3 bg-blue-50 rounded-lg">
-        <p className="text-xs text-blue-600">
+      <div className="mt-4 p-3 bg-primary-50 rounded-lg">
+        <p className="text-xs text-primary-600">
           💡 <strong>Tip:</strong> Las reseñas honestas y detalladas ayudan más a otros clientes a tomar decisiones informadas.
         </p>
       </div>

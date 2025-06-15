@@ -1,6 +1,7 @@
 import axios from 'axios';
+import { apiCache, CACHE_TTL } from '../utils/cache';
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api';
+const API_BASE_URL = 'http://localhost:3000/api';
 
 // Configurar axios con interceptores
 const axiosInstance = axios.create({
@@ -60,7 +61,15 @@ class ProductsService {
    */
   static async getProducts(filters = {}) {
     console.log('🔍 Obteniendo productos con filtros:', filters);
-    console.log('🌐 URL base:', API_BASE_URL);
+    
+    // Generar clave de cache
+    const cacheKey = apiCache.generateKey('/productos', filters);
+    
+    // Intentar obtener del cache
+    const cachedData = apiCache.get(cacheKey);
+    if (cachedData) {
+      return cachedData;
+    }
     
     const params = new URLSearchParams();
     if (filters.categoria_id) params.append('categoria_id', filters.categoria_id);
@@ -73,6 +82,10 @@ class ProductsService {
     
     const response = await axiosInstance.get(url);
     console.log('✅ Productos obtenidos:', response.data.length, 'productos');
+    
+    // Guardar en cache
+    apiCache.set(cacheKey, response.data, CACHE_TTL.PRODUCTS);
+    
     return response.data;
   }
 
@@ -106,6 +119,10 @@ class ProductsService {
     console.log('📤 Datos mapeados para backend:', backendData);
     
     const response = await axiosInstance.post('/productos', backendData);
+    
+    // Invalidar cache después de crear
+    this.invalidateProductsCache();
+    
     return response.data;
   }
 
@@ -129,6 +146,10 @@ class ProductsService {
     console.log('📤 Datos de actualización mapeados:', backendData);
     
     const response = await axiosInstance.put(`/productos/${id}`, backendData);
+    
+    // Invalidar cache después de actualizar
+    this.invalidateProductsCache();
+    
     return response.data;
   }
 
@@ -138,6 +159,10 @@ class ProductsService {
   static async deleteProduct(id) {
     console.log('🗑️ Eliminando producto:', id);
     const response = await axiosInstance.delete(`/productos/${id}`);
+    
+    // Invalidar cache después de eliminar
+    this.invalidateProductsCache();
+    
     return response.data;
   }
 
@@ -146,8 +171,30 @@ class ProductsService {
    */
   static async getCategories() {
     console.log('📂 Obteniendo categorías');
+    
+    // Generar clave de cache
+    const cacheKey = apiCache.generateKey('/categorias');
+    
+    // Intentar obtener del cache
+    const cachedData = apiCache.get(cacheKey);
+    if (cachedData) {
+      return cachedData;
+    }
+    
     const response = await axiosInstance.get('/categorias');
+    
+    // Guardar en cache (categorías son muy estables)
+    apiCache.set(cacheKey, response.data, CACHE_TTL.CATEGORIES);
+    
     return response.data;
+  }
+
+  /**
+   * Invalidar cache de productos (llamar después de crear/actualizar/eliminar)
+   */
+  static invalidateProductsCache() {
+    console.log('🔄 Invalidando cache de productos');
+    apiCache.invalidatePattern('/productos');
   }
 }
 

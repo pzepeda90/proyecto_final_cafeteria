@@ -47,7 +47,7 @@ const ProductReviewsPage = () => {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-4 border-blue-500 border-t-transparent mx-auto mb-4"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-4 border-primary-500 border-t-transparent mx-auto mb-4"></div>
           <p className="text-gray-600">Cargando información del producto...</p>
         </div>
       </div>
@@ -63,7 +63,7 @@ const ProductReviewsPage = () => {
           <p className="text-gray-600 mb-4">{error}</p>
           <button
             onClick={volverAtras}
-            className="bg-blue-600 text-white px-6 py-2 rounded-md hover:bg-blue-700 transition-colors flex items-center space-x-2 mx-auto"
+            className="bg-primary-500 text-white px-6 py-2 rounded-md hover:bg-primary-600 transition-colors flex items-center space-x-2 mx-auto"
           >
             <ArrowLeft size={16} />
             <span>Volver</span>
@@ -82,7 +82,7 @@ const ProductReviewsPage = () => {
           <p className="text-gray-600 mb-4">El producto que buscas no existe o ha sido eliminado.</p>
           <button
             onClick={volverAtras}
-            className="bg-blue-600 text-white px-6 py-2 rounded-md hover:bg-blue-700 transition-colors flex items-center space-x-2 mx-auto"
+            className="bg-primary-500 text-white px-6 py-2 rounded-md hover:bg-primary-600 transition-colors flex items-center space-x-2 mx-auto"
           >
             <ArrowLeft size={16} />
             <span>Volver</span>
@@ -98,7 +98,7 @@ const ProductReviewsPage = () => {
         <div className="mb-8">
           <button
             onClick={volverAtras}
-            className="flex items-center space-x-2 text-blue-600 hover:text-blue-700 mb-6 transition-colors group"
+            className="flex items-center space-x-2 text-primary-600 hover:text-primary-700 mb-6 transition-colors group"
           >
             <ArrowLeft size={20} className="group-hover:-translate-x-1 transition-transform" />
             <span>Volver al producto</span>

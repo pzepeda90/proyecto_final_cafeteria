@@ -123,7 +123,7 @@ function App() {
           </Route>
         </Route>
 
-        {/* Ruta 404 */}
+        {/* Ruta 404 con layout - DEBE IR AL FINAL */}
         <Route path="*" element={<NotFound />} />
       </Routes>
     </Suspense>

@@ -47,14 +47,13 @@ const mockStore = configureStore({
 const MockComponent = ({ children, ...props }) => <div data-testid="mock-component" {...props}>{children}</div>;
 
 // Mock all imports that might cause issues
-jest.mock('../components/Header', () => MockComponent);
+jest.mock('../components/layout/Navbar', () => MockComponent);
 jest.mock('../components/Footer', () => MockComponent);
-jest.mock('../components/ProductCard', () => MockComponent);
-jest.mock('../components/CartItem', () => MockComponent);
-jest.mock('../components/Badge', () => MockComponent);
-jest.mock('../components/Button', () => MockComponent);
-jest.mock('../components/Modal', () => MockComponent);
-jest.mock('../components/Loading', () => MockComponent);
+jest.mock('../components/OptimizedProductCard', () => MockComponent);
+jest.mock('../components/Cart', () => MockComponent);
+jest.mock('../components/ui/Button', () => MockComponent);
+jest.mock('../components/ui/Modal', () => MockComponent);
+jest.mock('../components/ui/Spinner', () => MockComponent);
 
 // Mock API calls
 jest.mock('../services/api', () => ({

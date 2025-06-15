@@ -146,11 +146,8 @@ app.use('/api/vendedores',
   vendedoresRoutes
 );
 
-// Rutas de reseñas (cache corto)
-app.use('/api',
-  cacheMiddleware(180), // 3 minutos
-  resenasRoutes
-);
+// Rutas de reseñas (sin cache, datos dinámicos en tiempo real)
+app.use('/api', resenasRoutes);
 
 // Rutas de configuración (cache largo)
 app.use('/api/metodos-pago',
@@ -171,9 +168,9 @@ app.use('/api/roles',
 // Rutas de direcciones (sin cache, datos personales)
 app.use('/api/direcciones', direccionesRoutes);
 
-// Rutas de mesas (cache corto para POS en tiempo real)
+// Rutas de mesas (cache muy corto para POS en tiempo real)
 app.use('/api/mesas',
-  cacheMiddleware(30), // 30 segundos para actualizaciones rápidas en POS
+  cacheMiddleware(5), // 5 segundos para actualizaciones casi en tiempo real
   mesasRoutes
 );
 

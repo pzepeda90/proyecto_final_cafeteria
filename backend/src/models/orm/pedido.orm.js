@@ -116,7 +116,7 @@ const Pedido = sequelize.define('Pedido', {
     allowNull: true
   },
   tipo_entrega: {
-    type: DataTypes.ENUM('local', 'domicilio', 'takeaway', 'dine_in'),
+    type: DataTypes.ENUM('local', 'delivery', 'takeaway', 'dine_in'),
     allowNull: true,
     defaultValue: 'local'
   },

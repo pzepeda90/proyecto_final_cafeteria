@@ -11,6 +11,7 @@ import Swal from 'sweetalert2';
 const ProductCard = ({ product, onAddToCart, showReviews = true }) => {
   const [showWriteReviewModal, setShowWriteReviewModal] = useState(false);
   const [showReadReviewsModal, setShowReadReviewsModal] = useState(false);
+  const [reviewKey, setReviewKey] = useState(0); // Key para forzar actualización
 
   const handleAddToCart = useCallback(() => {
     onAddToCart(product);
@@ -56,8 +57,9 @@ const ProductCard = ({ product, onAddToCart, showReviews = true }) => {
 
   const handleReviewCreated = useCallback(() => {
     // Al crear una reseña, cerramos el modal de escribir
-    // y no forzamos re-render del componente padre
+    // y forzamos actualización del componente de reseñas
     setShowWriteReviewModal(false);
+    setReviewKey(prev => prev + 1); // Forzar actualización
   }, []);
 
   const handleWriteFromReadModal = useCallback(() => {
@@ -100,10 +102,11 @@ const ProductCard = ({ product, onAddToCart, showReviews = true }) => {
             {product.descripcion}
           </p>
 
-          {/* Sistema de reseñas integrado - SIN key que force re-renders */}
+          {/* Sistema de reseñas integrado - CON key para actualizaciones en tiempo real */}
           {showReviews && (
             <div className="mb-3">
               <ReviewSummary 
+                key={reviewKey}
                 productoId={product.producto_id} 
                 compact={true}
                 showLink={false}
@@ -157,6 +160,7 @@ const ProductCard = ({ product, onAddToCart, showReviews = true }) => {
 
       {/* Modal para leer reseñas */}
       <ReadReviewsModal
+        key={reviewKey}
         isOpen={showReadReviewsModal}
         onClose={handleCloseReadModal}
         productoId={product.producto_id}

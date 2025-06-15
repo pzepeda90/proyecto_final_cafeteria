@@ -1,5 +1,6 @@
-const { Pedido, Usuario, EstadoPedido, DetallePedido, MetodoPago, Direccion, Producto, HistorialEstadoPedido } = require('../models/orm');
+const { Pedido, Usuario, EstadoPedido, DetallePedido, MetodoPago, Direccion, Producto, HistorialEstadoPedido, Vendedor, Mesa } = require('../models/orm');
 const { sequelize } = require('../models/orm/index');
+const { clearMesasCache } = require('../utils/cache');
 const { Op } = require('sequelize');
 
 /**
@@ -67,6 +68,8 @@ class PedidoService {
         where: whereClause,
         include: [
           { model: Usuario, attributes: ['nombre', 'apellido'] },
+          { model: Vendedor, attributes: ['nombre', 'apellido'], required: false },
+          { model: Mesa, attributes: ['numero'], required: false },
           { model: EstadoPedido },
           { model: MetodoPago },
           { model: Direccion },
@@ -100,6 +103,8 @@ class PedidoService {
       const pedido = await Pedido.findByPk(id, {
         include: [
           { model: Usuario, attributes: ['nombre', 'apellido'] },
+          { model: Vendedor, attributes: ['nombre', 'apellido'], required: false },
+          { model: Mesa, attributes: ['numero'], required: false },
           { model: EstadoPedido },
           { model: MetodoPago },
           { model: Direccion },
@@ -132,6 +137,7 @@ class PedidoService {
     try {
       const {
         usuario_id,
+        vendedor_id,
         metodo_pago_id,
         direccion_id,
         carrito_id,
@@ -166,6 +172,7 @@ class PedidoService {
       const pedido = await Pedido.create({
         numero_pedido,
         usuario_id,
+        vendedor_id,
         estado_pedido_id,
         metodo_pago_id,
         direccion_id,
@@ -290,14 +297,10 @@ class PedidoService {
       // Invalidar cache si hay mesa involucrada
       if (pedido.mesa_id) {
         try {
-          const redisClient = require('../config/redis');
-          if (redisClient) {
-            await redisClient.del('/api/mesas');
-            await redisClient.del('/api/mesas/con-pedidos');
-            console.log('Cache de mesas invalidado después de actualizar pedido');
-          }
+          await clearMesasCache();
+          console.log('Cache de mesas completamente limpiado después de actualizar pedido');
         } catch (cacheError) {
-          console.warn('Error al invalidar cache:', cacheError);
+          console.warn('Error al limpiar cache:', cacheError);
         }
       }
       
@@ -319,6 +322,7 @@ class PedidoService {
     try {
       const {
         usuario_id,
+        vendedor_id,
         metodo_pago_id,
         direccion_id,
         mesa_id,
@@ -353,12 +357,17 @@ class PedidoService {
       
       // Si hay mesa_id, verificar disponibilidad real basada en pedidos activos
       if (mesa_id) {
+        console.log(`🏠 PedidoService.createDirect: Procesando mesa_id = ${mesa_id} (tipo: ${typeof mesa_id}) para tipo_entrega = ${tipo_entrega}`);
+        
         const MesaService = require('./mesa.service');
         const mesa = await MesaService.findById(mesa_id);
         
         if (!mesa) {
+          console.error(`❌ Mesa con ID ${mesa_id} no encontrada`);
           throw new Error(`Mesa con ID ${mesa_id} no encontrada`);
         }
+        
+        console.log(`✅ Mesa encontrada: ID=${mesa.mesa_id}, Número=${mesa.numero}, estado actual: ${mesa.estado}`);
         
         // Verificar si la mesa tiene pedidos activos (lógica consistente con frontend)
         const pedidosActivos = await Pedido.count({
@@ -375,10 +384,19 @@ class PedidoService {
           transaction
         });
         
+        console.log(`Mesa ${mesa.numero} tiene ${pedidosActivos} pedidos activos`);
+        
         // La mesa está realmente ocupada solo si tiene pedidos activos
         const mesaRealmenteOcupada = pedidosActivos > 0;
         
+        console.log(`🔍 ANÁLISIS MESA ${mesa.numero}:`);
+        console.log(`   - Estado en BD: ${mesa.estado}`);
+        console.log(`   - Pedidos activos: ${pedidosActivos}`);
+        console.log(`   - ¿Realmente ocupada?: ${mesaRealmenteOcupada}`);
+        console.log(`   - Tipo entrega: ${tipo_entrega}`);
+        
         if (mesaRealmenteOcupada) {
+          console.error(`❌ RECHAZANDO PEDIDO: Mesa ${mesa.numero} tiene ${pedidosActivos} pedidos activos`);
           throw new Error(`La mesa ${mesa.numero} está ocupada con pedidos activos`);
         }
         
@@ -390,14 +408,23 @@ class PedidoService {
         }
         
         // Marcar la mesa como ocupada para el nuevo pedido
+        console.log(`Marcando Mesa ${mesa.numero} como ocupada para pedido directo...`);
         await MesaService.updateStatus(mesa_id, 'ocupada');
-        console.log(`Mesa ${mesa.numero} marcada como ocupada para pedido directo`);
+        console.log(`✅ Mesa ${mesa.numero} marcada como ocupada exitosamente`);
       }
       
       // Insertar registro de pedido (incluir mesa_id si está presente)
+      console.log(`📝 CREANDO PEDIDO EN BD:`);
+      console.log(`   - numero_pedido: ${numero_pedido}`);
+      console.log(`   - usuario_id: ${usuario_id}`);
+      console.log(`   - mesa_id: ${mesa_id} (tipo: ${typeof mesa_id})`);
+      console.log(`   - tipo_entrega: ${tipo_entrega}`);
+      console.log(`   - total: ${total}`);
+      
       const pedido = await Pedido.create({
         numero_pedido,
         usuario_id,
+        vendedor_id,
         estado_pedido_id,
         metodo_pago_id,
         direccion_id,
@@ -410,6 +437,12 @@ class PedidoService {
         tipo_entrega,
         notas
       }, { transaction });
+      
+      console.log(`✅ Pedido creado exitosamente: ID=${pedido.pedido_id}, Mesa ID=${pedido.mesa_id}, Número=${pedido.numero_pedido}`);
+      console.log(`🔍 VERIFICACIÓN PEDIDO CREADO:`);
+      console.log(`   - pedido.mesa_id: ${pedido.mesa_id} (tipo: ${typeof pedido.mesa_id})`);
+      console.log(`   - pedido.tipo_entrega: ${pedido.tipo_entrega}`);
+      console.log(`   - pedido.estado_pedido_id: ${pedido.estado_pedido_id}`);
       
       // Insertar detalles del pedido
       for (const producto of productos) {
@@ -440,21 +473,16 @@ class PedidoService {
       
       await transaction.commit();
       
-      // Invalidar cache de mesas después de crear pedido
+      // Invalidar cache inmediatamente después de crear el pedido si hay mesa involucrada
       if (mesa_id) {
         try {
-          const redisClient = require('../config/redis');
-          if (redisClient) {
-            await redisClient.del('/api/mesas');
-            await redisClient.del('/api/mesas/con-pedidos');
-            console.log('Cache de mesas invalidado después de crear pedido');
-          }
+          await clearMesasCache();
+          console.log(`🔥 Cache de mesas COMPLETAMENTE limpiado después de crear pedido para mesa ${mesa_id}`);
         } catch (cacheError) {
-          console.warn('Error al invalidar cache:', cacheError);
+          console.warn('Error al limpiar cache inmediatamente:', cacheError);
         }
       }
       
-      // Retornar el pedido completo
       return this.findById(pedido.pedido_id);
     } catch (error) {
       await transaction.rollback();

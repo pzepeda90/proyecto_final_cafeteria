@@ -1,9 +1,20 @@
 import { useSelector } from 'react-redux';
 import { useState, useEffect } from 'react';
 import { ROLE_LABELS } from '../../constants/roles';
-import {
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend, LineChart, Line
-} from 'recharts';
+// Importaciones específicas para optimizar bundle
+import { BarChart } from 'recharts/lib/chart/BarChart';
+import { Bar } from 'recharts/lib/cartesian/Bar';
+import { XAxis } from 'recharts/lib/cartesian/XAxis';
+import { YAxis } from 'recharts/lib/cartesian/YAxis';
+import { CartesianGrid } from 'recharts/lib/cartesian/CartesianGrid';
+import { Tooltip } from 'recharts/lib/component/Tooltip';
+import { ResponsiveContainer } from 'recharts/lib/component/ResponsiveContainer';
+import { PieChart } from 'recharts/lib/chart/PieChart';
+import { Pie } from 'recharts/lib/polar/Pie';
+import { Cell } from 'recharts/lib/component/Cell';
+import { Legend } from 'recharts/lib/component/Legend';
+import { LineChart } from 'recharts/lib/chart/LineChart';
+import { Line } from 'recharts/lib/cartesian/Line';
 import Modal from '../../components/ui/Modal';
 import DashboardService from '../../services/dashboardService';
 import { formatCurrency } from '../../utils/formatters';

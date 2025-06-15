@@ -140,6 +140,54 @@ Producto.belongsTo(Vendedor, {
   foreignKey: 'vendedor_id'
 });
 
+// Relación Vendedor-Pedido (1:N)
+Vendedor.hasMany(Pedido, { 
+  foreignKey: 'vendedor_id'
+});
+Pedido.belongsTo(Vendedor, { 
+  foreignKey: 'vendedor_id'
+});
+
+// Relación Usuario-Pedido (1:N)
+Usuario.hasMany(Pedido, { 
+  foreignKey: 'usuario_id'
+});
+Pedido.belongsTo(Usuario, { 
+  foreignKey: 'usuario_id'
+});
+
+// Relación MetodoPago-Pedido (1:N)
+MetodoPago.hasMany(Pedido, { 
+  foreignKey: 'metodo_pago_id'
+});
+Pedido.belongsTo(MetodoPago, { 
+  foreignKey: 'metodo_pago_id'
+});
+
+// Relación EstadoPedido-Pedido (1:N)
+EstadoPedido.hasMany(Pedido, { 
+  foreignKey: 'estado_pedido_id'
+});
+Pedido.belongsTo(EstadoPedido, { 
+  foreignKey: 'estado_pedido_id'
+});
+
+// Relación Direccion-Pedido (1:N)
+Direccion.hasMany(Pedido, { 
+  foreignKey: 'direccion_id'
+});
+Pedido.belongsTo(Direccion, { 
+  foreignKey: 'direccion_id'
+});
+
+// Relación Mesa-Pedido (1:N)
+Mesa.hasMany(Pedido, { 
+  foreignKey: 'mesa_id'
+});
+Pedido.belongsTo(Mesa, { 
+  foreignKey: 'mesa_id'
+});
+
 module.exports = {
   sequelize,
   Usuario,
