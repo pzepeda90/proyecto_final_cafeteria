@@ -1,0 +1,14 @@
+# Variables de entorno para Render Web Service
+# Copia y pega estas en la pestaña Environment de tu Web Service
+
+DATABASE_URL=postgresql://cafeteria_user:FYbyf7iNNHlRkfg6n5ifxORgXKRuMZiH@dpg-d15qleidbo4c73c44aa0-a/cafeteria_prod
+JWT_SECRET=mi_super_secreto_jwt_para_produccion_2024
+NODE_ENV=production
+FRONTEND_URL=https://cafeteria-lbandito.netlify.app
+PORT=3000
+LOG_LEVEL=info
+DB_HOST=dpg-d15qleidbo4c73c44aa0-a
+DB_PORT=5432
+DB_NAME=cafeteria_prod
+DB_USER=cafeteria_user
+DB_PASS=FYbyf7iNNHlRkfg6n5ifxORgXKRuMZiH 
