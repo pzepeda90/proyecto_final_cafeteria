@@ -23,12 +23,12 @@ export default defineConfig({
     strictPort: true,
     host: true, // Permitir acceso externo
     cors: true,
-    // Configuración de proxy para development
+    // Configuración de proxy para development - usando API de producción
     proxy: {
       '/api': {
-        target: 'http://localhost:3000',
+        target: 'https://proyecto-final-cafeteria.onrender.com',
         changeOrigin: true,
-        secure: false,
+        secure: true,
       }
     }
   },
