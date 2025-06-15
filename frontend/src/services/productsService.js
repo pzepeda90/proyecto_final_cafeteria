@@ -1,7 +1,8 @@
 import axios from 'axios';
 import { apiCache, CACHE_TTL } from '../utils/cache';
+import { API_URL } from '../config/api';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
+const API_BASE_URL = API_URL;
 
 // Configurar axios con interceptores
 const axiosInstance = axios.create({
