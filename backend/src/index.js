@@ -36,6 +36,9 @@ const mesasRoutes = require('./routes/mesas.routes');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+// Configurar Express para confiar en proxies (necesario para Render)
+app.set('trust proxy', true);
+
 // Middleware de seguridad y performance (orden importante)
 app.use(helmetConfig);
 app.use(compressionMiddleware);
