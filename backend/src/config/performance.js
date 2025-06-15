@@ -349,6 +349,10 @@ const corsConfig = {
       'http://localhost:5174',
       'http://localhost:5173',
       process.env.FRONTEND_URL,
+      process.env.CORS_ORIGIN,
+      // URLs específicas para producción
+      'https://cafeteria-lbandito.netlify.app',
+      'https://proyecto-final-cafeteria-frontend.netlify.app'
     ].filter(Boolean);
     
     // Permitir requests sin origin (apps móviles, Postman, etc.)

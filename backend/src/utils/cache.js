@@ -4,11 +4,25 @@ const { logger } = require('./logger');
 // Tiempo de expiración por defecto (5 segundos para debugging)
 const DEFAULT_EXPIRATION = 5;
 
+// Cache en memoria como fallback cuando Redis no está disponible
+const memoryCache = new Map();
+
 // Función para obtener datos del caché
 const getCache = async (key) => {
   try {
-    const data = await redis.get(key);
-    return data ? JSON.parse(data) : null;
+    if (redis) {
+      const data = await redis.get(key);
+      return data ? JSON.parse(data) : null;
+    } else {
+      // Usar caché en memoria como fallback
+      const cached = memoryCache.get(key);
+      if (cached && cached.expires > Date.now()) {
+        return cached.data;
+      } else if (cached) {
+        memoryCache.delete(key);
+      }
+      return null;
+    }
   } catch (error) {
     logger.error(`Error al obtener caché para key ${key}: ${error.message}`);
     return null;
@@ -18,7 +32,15 @@ const getCache = async (key) => {
 // Función para guardar datos en el caché
 const setCache = async (key, data, expiration = DEFAULT_EXPIRATION) => {
   try {
-    await redis.setex(key, expiration, JSON.stringify(data));
+    if (redis) {
+      await redis.setex(key, expiration, JSON.stringify(data));
+    } else {
+      // Usar caché en memoria como fallback
+      memoryCache.set(key, {
+        data,
+        expires: Date.now() + (expiration * 1000)
+      });
+    }
     return true;
   } catch (error) {
     logger.error(`Error al guardar caché para key ${key}: ${error.message}`);
@@ -29,7 +51,11 @@ const setCache = async (key, data, expiration = DEFAULT_EXPIRATION) => {
 // Función para eliminar datos del caché
 const deleteCache = async (key) => {
   try {
-    await redis.del(key);
+    if (redis) {
+      await redis.del(key);
+    } else {
+      memoryCache.delete(key);
+    }
     return true;
   } catch (error) {
     logger.error(`Error al eliminar caché para key ${key}: ${error.message}`);
