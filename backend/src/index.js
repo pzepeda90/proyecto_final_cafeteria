@@ -53,8 +53,9 @@ app.use(performanceMiddleware);
 // Health check endpoint (sin rate limiting)
 app.get('/health', healthCheckMiddleware);
 
-// Rate limiting general (solo en producción)
-if (process.env.NODE_ENV === 'production') {
+// Rate limiting deshabilitado temporalmente en producción para evitar errores de proxy
+// TODO: Re-habilitar cuando se configure correctamente el proxy
+if (process.env.NODE_ENV === 'development') {
   app.use(rateLimits.general);
 }
 
@@ -102,25 +103,18 @@ app.use('/api-docs',
 
 // Rutas con rate limiting específico y cache estratégico
 
-// Rutas de autenticación (solo rate limiting en producción)
-if (process.env.NODE_ENV === 'production') {
+// Rate limiting de autenticación deshabilitado temporalmente en producción
+// TODO: Re-habilitar cuando se configure correctamente el proxy
+if (process.env.NODE_ENV === 'development') {
   app.use('/api/usuarios/login', rateLimits.auth);
   app.use('/api/usuarios/register', rateLimits.auth);
 }
 
-// Rutas de productos (solo cache, sin rate limiting en desarrollo)
-if (process.env.NODE_ENV === 'development') {
-  app.use('/api/productos', 
-    cacheMiddleware(300), // 5 minutos de cache
-    productosRoutes
-  );
-} else {
-  app.use('/api/productos', 
-    rateLimits.products,
-    cacheMiddleware(300), // 5 minutos de cache
-    productosRoutes
-  );
-}
+// Rutas de productos (sin rate limiting temporalmente)
+app.use('/api/productos', 
+  cacheMiddleware(300), // 5 minutos de cache
+  productosRoutes
+);
 
 // Rutas de categorías (cache muy largo)
 app.use('/api/categorias',
@@ -131,19 +125,11 @@ app.use('/api/categorias',
 // Rutas de usuarios (sin cache, datos sensibles)
 app.use('/api/usuarios', usuariosRoutes);
 
-// Rutas de pedidos (rate limiting solo en producción)
-if (process.env.NODE_ENV === 'development') {
-  app.use('/api/pedidos',
-    invalidateCache(['/api/productos', '/api/carritos']),
-    pedidosRoutes
-  );
-} else {
-  app.use('/api/pedidos',
-    rateLimits.orders,
-    invalidateCache(['/api/productos', '/api/carritos']),
-    pedidosRoutes
-  );
-}
+// Rutas de pedidos (sin rate limiting temporalmente)
+app.use('/api/pedidos',
+  invalidateCache(['/api/productos', '/api/carritos']),
+  pedidosRoutes
+);
 
 // Rutas de carritos (sin cache, datos dinámicos)
 app.use('/api/carritos', carritosRoutes);

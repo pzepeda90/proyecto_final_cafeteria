@@ -2,8 +2,9 @@ const Redis = require('ioredis');
 
 let redisClient = null;
 
-// Solo intentar conectar a Redis si está configurado
-if (process.env.REDIS_URL || process.env.REDIS_HOST) {
+// Redis temporalmente deshabilitado en producción para evitar errores
+// TODO: Re-habilitar cuando se configure correctamente
+if (false && (process.env.REDIS_URL || process.env.REDIS_HOST)) {
   try {
     const redisConfig = process.env.REDIS_URL ? {
       retryStrategy: (times) => Math.min(times * 50, 2000),
